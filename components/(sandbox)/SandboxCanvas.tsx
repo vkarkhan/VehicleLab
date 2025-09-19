@@ -64,7 +64,7 @@ function Vehicle({ telemetry }: { telemetry: VehicleTelemetry }) {
   );
 }
 
-export function SandboxCanvas({ state, telemetry, watermark }: SandboxCanvasProps) {
+export function SandboxCanvas({ telemetry, watermark, containerRef }: SandboxCanvasProps) {
   const [dpr, setDpr] = useState(1);
 
   useEffect(() => {
