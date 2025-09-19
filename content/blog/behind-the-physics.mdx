@@ -1,0 +1,29 @@
+---
+title: "Behind the Physics"
+description: "A look at the simplified bicycle model powering VehicleLab."
+publishedAt: "2025-02-25"
+tags:
+  - engineering
+  - physics
+ctaPreset: "/vehicellab"
+---
+
+## Semi-Implicit, Educational, Fast
+
+We use a bicycle model because it captures the essence of cornering without overwhelming the browser.
+The sandbox integrates yaw rate and lateral velocity at 60 Hz, sampling telemetry at 20 Hz so charts stay crisp without
+hammering the main thread.
+
+### Highlights
+
+- Cornering stiffness reacts to μ and axle loads, clamped to mimic simple saturation.
+- Weight transfer is approximated with CG height and wheelbase, giving intuitive load bars.
+- Steering modes (step and sine) reveal both steady-state and transient behaviour.
+
+### Roadmap for the solver
+
+1. Add compliance steer and aligning torque for transient fidelity.
+2. Introduce per-axle camber and toe inputs for Pro users.
+3. Export the time-domain model as JSON so you can post-process in MATLAB or Python.
+
+Your feedback shapes the numerical model—keep the ideas coming.

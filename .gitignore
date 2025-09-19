@@ -1,0 +1,15 @@
+node_modules
+.pnpm-store
+.next
+out
+.env.local
+.env
+.env.*
+!.env.local.example
+/data/app.db
+/data/*.db
+/.vercel
+/playwright-report
+/test-results
+coverage
+.DS_Store

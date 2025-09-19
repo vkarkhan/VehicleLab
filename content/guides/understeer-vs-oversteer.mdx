@@ -1,0 +1,46 @@
+---
+title: "Understeer vs Oversteer"
+description: "Learn how weight distribution and tyre slip define the balance of a car."
+publishedAt: "2025-01-10"
+updatedAt: "2025-02-01"
+ctaPreset: "/vehicellab?mass=1350&weightDistributionFront=0.6&tyreGrip=0.9&steeringMode=step&steeringAmplitude=6&manoeuvre=skidpad&skidpadRadius=25"
+tags:
+  - handling
+  - slip-angle
+  - fundamentals
+---
+
+## Why balance matters
+
+Understeer and oversteer describe how the front and rear tyres approach their grip limits.
+When the front tyres saturate first the car resists turn-in (understeer); when the rear loses
+traction first the car rotates aggressively (oversteer).
+
+- **Understeer:** steering angle increases but the car takes a wider arc.
+- **Oversteer:** steering angle decreases while the tail rotates toward the inside of the corner.
+- **Neutral:** front and rear tyres reach peak slip angles together.
+
+### Managing balance
+
+1. Reposition weight using ballast or suspension preload.
+2. Adjust tyre pressures and compounds to shift the peak slip angle.
+3. Modify anti-roll bars to alter load transfer front vs rear.
+
+### FAQs
+
+**Does more front weight always mean understeer?**
+No. Stiffer rear roll control or higher rear tyre stiffness can still induce oversteer.
+
+**What role does steering input play?**
+A sharp steering step can jolt the front tyres toward saturation; smoother inputs allow the rear to catch up.
+
+**How do aero loads affect balance?**
+Downforce increases both front and rear grip but the distribution of aero load is crucial. A forward aero balance can mitigate mechanical understeer.
+
+**What is the best way to diagnose balance issues?**
+Examine slip-angle traces or yaw rate in the VehicleLab sandbox. Watching how quickly the car achieves steady-state yaw will reveal tendencies.
+
+**How should I tune for mixed conditions?**
+Aim for slight understeer so that as grip falls the vehicle remains predictable.
+
+[Open this preset in the sandbox]({frontmatter.ctaPreset})

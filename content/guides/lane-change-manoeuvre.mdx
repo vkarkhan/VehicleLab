@@ -1,0 +1,33 @@
+---
+title: "Lane-Change Manoeuvre"
+description: "Stress transient response with the double-lane-change template."
+publishedAt: "2025-02-12"
+ctaPreset: "/vehicellab?manoeuvre=lane-change&speed=100&steeringMode=sine&sineFrequency=0.9&steeringAmplitude=8&tyreGrip=1.05"
+tags:
+  - transient
+  - manoeuvres
+---
+
+## The ISO double-lane-change in your browser
+
+Quick evasive manoeuvres test how quickly the vehicle builds yaw and how well it settles afterward. Use the sandbox to overlay slip angles and weight transfer
+while the pre-baked steering trace runs.
+
+### What to observe
+
+- **Yaw rate delay:** compare the steering input to yaw rate rise time.
+- **Load transfer symmetry:** ensure the rear regains load as quickly as the front during the second lane.
+- **Slip angle overshoot:** excessive rear slip indicates oversteer risk when the driver straightens the wheel.
+
+### FAQs
+
+**Can I shorten the manoeuvre?**
+Reduce `duration` to compress the timeline and increase the challenge.
+
+**How do dampers influence the trace?**
+Softer dampers elongate oscillations; the sandbox's advanced controls (Pro) will let you tune this precisely.
+
+**Why does lateral acceleration spike twice?**
+Each steering reversal creates an opposite acceleration peak. Use the CSV export to compare magnitudes.
+
+[Launch the lane-change preset]({frontmatter.ctaPreset})

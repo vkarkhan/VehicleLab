@@ -1,0 +1,7 @@
+{
+  "name": "VehicleLab",
+  "tagline": "Interactive WebGL sandbox for real-time vehicle dynamics.",
+  "showLogos": false,
+  "enable3D": true,
+  "enableAnalytics": false
+}
