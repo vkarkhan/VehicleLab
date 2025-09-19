@@ -1,0 +1,35 @@
+---
+title: "Weight Transfer Explained"
+description: "Visualise longitudinal and lateral load shifts with live telemetry."
+publishedAt: "2025-01-18"
+ctaPreset: "/vehicellab?mass=1500&cgHeight=0.65&weightDistributionFront=0.55&tyreGrip=1.1&steeringMode=sine&sineFrequency=0.8&manoeuvre=lane-change"
+tags:
+  - weight-transfer
+  - suspension
+---
+
+## Dynamic load is never static
+
+As a car accelerates, brakes, or corners, weight migrates across tyres. The amount depends on
+mass, centre of gravity height, and roll stiffness distribution. VehicleLab renders the shifting loads
+as bars so you can correlate telemetry with physical forces.
+
+- Higher **CG height** increases transfer and reduces available grip on the unloading axle.
+- Wider **track width** reduces transfer; we keep it constant in the sandbox to highlight CG effects.
+- **Anti-roll bars** and spring rates control how much each axle takes from the total load shift.
+
+### FAQs
+
+**Why does the front load drop during a lane change?**
+Because lateral acceleration builds faster than yaw, the front tyres momentarily carry less normal load while the rear compresses.
+
+**Can I simulate trail braking?**
+Yes—reduce speed in the sandbox while applying steering inputs. Monitor lateral accel alongside weight bars to see the coupling.
+
+**How does tyre grip interact with load?**
+Grip increases with load but not linearly; too much transfer saturates the loaded tyres sooner, leading to understeer or oversteer.
+
+**What should I watch in telemetry?**
+Compare yaw rate build-up with the front/rear load percentages. A lagging yaw rate indicates insufficient front load.
+
+[Load this lane-change preset]({frontmatter.ctaPreset})

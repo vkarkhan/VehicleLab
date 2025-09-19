@@ -1,0 +1,38 @@
+---
+title: "What Is a Skidpad?"
+description: "Use steady-state steering to benchmark lateral grip and balance."
+publishedAt: "2025-01-25"
+ctaPreset: "/vehicellab?speed=80&manoeuvre=skidpad&skidpadRadius=20&steeringMode=step&steeringAmplitude=7&tyreGrip=1.0"
+tags:
+  - skidpad
+  - testing
+---
+
+## The gold standard of steady-state testing
+
+A skidpad maintains constant radius and speed so lateral acceleration and yaw rate can be studied
+without transient effects. VehicleLab mimics this by holding steering input and speed constant while
+telemetry reveals slip angles and grip utilisation.
+
+### Typical workflow
+
+1. Pick a radius and target speed.
+2. Apply a steering step and wait for yaw rate to stabilise.
+3. Compare lateral acceleration to theoretical limits (`v^2 / r`).
+4. Adjust CG height or tyre grip to see how the steady-state point moves.
+
+### FAQs
+
+**Why is yaw rate slightly below theory?**
+Tyre slip angles reduce effective radius; the sandbox shows this through slip badges.
+
+**What metrics should I record?**
+Lateral acceleration in g, yaw rate in deg/s, and steering angle at steady state.
+
+**How does weight distribution change results?**
+More front weight usually increases understeer gradient, requiring larger steering angles.
+
+**Can the skidpad reveal suspension issues?**
+Yes. If small changes in CG height cause large balance swings, the suspension likely needs stiffer roll control.
+
+[Run the skidpad preset]({frontmatter.ctaPreset})
