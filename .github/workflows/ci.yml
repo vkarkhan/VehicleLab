@@ -1,0 +1,60 @@
+name: CI (Vercel mirror)
+
+on:
+  pull_request:
+  push:
+    branches: [ main ]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: .
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Use Node 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20.x'
+          cache: 'npm'
+
+      - name: Print versions
+        run: |
+          node -v
+          npm -v
+
+      - name: Configure npm behavior (matches .npmrc)
+        run: |
+          npm config set legacy-peer-deps true
+          npm config set fund false
+          npm config set audit false
+
+      - name: Install dependencies
+        run: npm install --no-audit --no-fund --legacy-peer-deps
+
+      - name: Contentlayer (only if script exists)
+        run: |
+          if npm run | grep -q postinstall; then
+            echo "postinstall already ran via npm install"
+          else
+            echo "No postinstall script; skipping contentlayer build"
+          fi
+
+      - name: Build
+        run: npm run build
+
+      - name: Smoke test
+        run: node scripts/ci-smoke.mjs
+
+      - name: Verify build artifacts
+        run: |
+          test -d .next || (echo ".next not found" && exit 1)
+          [ -f .next/BUILD_ID ] || (echo "BUILD_ID missing" && exit 1)
+
+      - name: Sanity: ensure @types/three not requested at ^0.167.4
+        run: |
+          npm ls @types/three || true
+          ! npm ls @types/three 2>/dev/null | grep -q '\^0\.167\.4' || (echo "Invalid @types/three requested" && exit 1)
