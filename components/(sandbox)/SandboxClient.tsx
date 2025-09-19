@@ -89,7 +89,7 @@ export function SandboxClient({ initialState, enable3D, isPro = false }: Sandbox
     const url = URL.createObjectURL(blob);
     const link = document.createElement("a");
     link.href = url;
-    link.download = `vehicelab-telemetry-${Date.now()}.csv`;
+    link.download = `vehiclelab-telemetry-${Date.now()}.csv`;
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
@@ -102,7 +102,7 @@ export function SandboxClient({ initialState, enable3D, isPro = false }: Sandbox
     const dataUrl = canvas.toDataURL('image/png');
     const link = document.createElement('a');
     link.href = dataUrl;
-    link.download = `vehicelab-snapshot-${Date.now()}.png`;
+    link.download = `vehiclelab-snapshot-${Date.now()}.png`;
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
