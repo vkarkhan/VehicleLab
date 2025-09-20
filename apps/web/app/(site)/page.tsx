@@ -1,6 +1,7 @@
 import Link from "next/link";
 
 import { Card } from "@/components/Card";
+import { PingButton } from "@/components/ping-button";
 import { Section } from "@/components/Section";
 import { getBlogPosts, getGuides } from "@/lib/contentlayer";
 
@@ -48,6 +49,10 @@ export default function HomePage() {
             </div>
           </div>
         </div>
+      </section>
+
+      <section className="mx-auto w-full max-w-6xl px-4 sm:px-6 lg:px-8">
+        <PingButton />
       </section>
 
       <Section
