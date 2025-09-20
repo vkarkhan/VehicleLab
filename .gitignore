@@ -1,15 +1,36 @@
-node_modules
-.pnpm-store
-.next
-out
-.env.local
+node_modules/
+apps/*/node_modules/
+.pnpm-store/
+
+# Build outputs
+.next/
+apps/*/.next/
+dist/
+out/
+build/
+
+# Contentlayer artifacts
+.contentlayer/
+apps/*/.contentlayer/
+apps/*/contentlayer/generated/
+
+# Env files
 .env
 .env.*
+!.env.example
 !.env.local.example
-/data/app.db
-/data/*.db
-/.vercel
+
+# Local databases
+apps/*/data/*.db
+apps/*/data/**/*.db
+
+# Reports & coverage
 /playwright-report
 /test-results
 coverage
+
+# Platform directories
+/.vercel
+
+# OS junk
 .DS_Store
