@@ -5,6 +5,7 @@ import { useId } from "react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Slider } from "@/components/ui/slider";
+import { Switch } from "@/components/ui/switch";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import type { SandboxState } from "@/lib/stateSchema";
 import { roundTo } from "@/lib/utils";
@@ -92,7 +93,7 @@ export function ControlPanel({ state, onChange }: ControlPanelProps) {
           </div>
         </div>
         <div>
-          <Label htmlFor={`${baseId}-grip`}>Tyre grip μ</Label>
+          <Label htmlFor={`${baseId}-grip`}>Tyre grip (mu)</Label>
           <div className="mt-2 flex items-center gap-3">
             <Slider
               value={[state.tyreGrip]}
@@ -281,6 +282,21 @@ export function ControlPanel({ state, onChange }: ControlPanelProps) {
         </div>
       </div>
 
+      <div className="space-y-4">
+        <h3 className="text-sm font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">Display</h3>
+        <div className="flex items-center justify-between rounded-2xl border border-slate-200 bg-white/60 p-4 shadow-inner dark:border-slate-800 dark:bg-slate-900/40">
+          <div>
+            <p className="text-sm font-medium text-slate-900 dark:text-white">Show track & contact patches</p>
+            <p className="text-xs text-slate-500 dark:text-slate-400">Toggle the asphalt plane and wheel footprints in the 3D sandbox.</p>
+          </div>
+          <Switch
+            checked={state.showTrack}
+            onCheckedChange={(value) => control("showTrack", value)}
+            aria-label="Toggle track and contact patches"
+          />
+        </div>
+      </div>
+
       <div className="space-y-3">
         <div className="flex items-center justify-between">
           <h3 className="text-sm font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">Advanced suspension</h3>
@@ -293,7 +309,7 @@ export function ControlPanel({ state, onChange }: ControlPanelProps) {
         </p>
         <div className="grid gap-3 sm:grid-cols-2">
           <div className="space-y-1.5">
-            <Label htmlFor={`${baseId}-camber`}>Static camber (°)</Label>
+            <Label htmlFor={`${baseId}-camber`}>Static camber (deg)</Label>
             <Input id={`${baseId}-camber`} value={roundTo(state.camber, 1)} readOnly className="opacity-60" />
           </div>
           <div className="space-y-1.5">

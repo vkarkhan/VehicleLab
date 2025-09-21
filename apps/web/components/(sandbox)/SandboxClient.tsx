@@ -6,11 +6,14 @@ import { usePathname, useRouter } from "next/navigation";
 
 import { CanvasWatermark } from "@/components/CanvasWatermark";
 import { ControlPanel } from "@/components/ControlPanel";
+import { InfoTooltip } from "@/components/InfoTooltip";
+import { NoSteerTestCard } from "@/components/(sandbox)/NoSteerTestCard";
 import { ShareButton } from "@/components/ShareButton";
 import { ChartPanel } from "@/components/ChartPanel";
 import { Button } from "@/components/ui/button";
 import type { SandboxState } from "@/lib/stateSchema";
 import { defaultSandboxState, serializeStateToSearchParams } from "@/lib/stateSchema";
+import { runNoSteerTest, type NoSteerTestResult } from "@/lib/noSteerTest";
 import { roundTo } from "@/lib/utils";
 
 import { useVehicleSimulation } from "./useVehicleSimulation";
@@ -18,6 +21,9 @@ import { useVehicleSimulation } from "./useVehicleSimulation";
 const SandboxCanvas = dynamic(() => import("./SandboxCanvas").then((mod) => mod.SandboxCanvas), {
   ssr: false
 });
+
+const GRAVITY = 9.80665;
+const DEGREE_SYMBOL = "\u00B0";
 
 interface SandboxClientProps {
   initialState: SandboxState;
@@ -33,6 +39,9 @@ export function SandboxClient({ initialState, enable3D, isPro = false }: Sandbox
   const pathname = usePathname();
   const [isPending, startTransition] = useTransition();
   const [shareUrl, setShareUrl] = useState<string>("");
+  const [noSteerResult, setNoSteerResult] = useState<NoSteerTestResult | null>(null);
+  const [noSteerLastRunAt, setNoSteerLastRunAt] = useState<number | null>(null);
+  const [isNoSteerRunning, setIsNoSteerRunning] = useState(false);
 
   useEffect(() => {
     const params = serializeStateToSearchParams(state);
@@ -48,7 +57,7 @@ export function SandboxClient({ initialState, enable3D, isPro = false }: Sandbox
       }
     }, 150);
     return () => clearTimeout(timeout);
-  }, [pathname, router, state]);
+  }, [pathname, router, state, startTransition]);
 
   useEffect(() => {
     if (shareUrl) return;
@@ -70,19 +79,58 @@ export function SandboxClient({ initialState, enable3D, isPro = false }: Sandbox
     front: roundTo((telemetry.frontSlipAngle * 180) / Math.PI, 2),
     rear: roundTo((telemetry.rearSlipAngle * 180) / Math.PI, 2)
   }), [telemetry.frontSlipAngle, telemetry.rearSlipAngle]);
+  const stateSignature = useMemo(() => JSON.stringify(state), [state]);
+  const lastResultSignatureRef = useRef<string | null>(null);
+  const lateralUnitLabel = state.lateralUnit === "g" ? "g" : "m/s^2";
+  const lateralValue = roundTo(
+    state.lateralUnit === "g" ? telemetry.lateralAcceleration / GRAVITY : telemetry.lateralAcceleration,
+    2
+  );
+  const lateralTooltip = "g = gravitational acceleration (1 g approx 9.80665 m/s^2). Values shown are multiples of g.";
+  const lateralFormatter = state.lateralUnit === "g" ? (value: number) => value / GRAVITY : undefined;
+
+  useEffect(() => {
+    if (isNoSteerRunning) return;
+    if (lastResultSignatureRef.current && lastResultSignatureRef.current !== stateSignature) {
+      setNoSteerResult(null);
+      setNoSteerLastRunAt(null);
+      lastResultSignatureRef.current = null;
+    }
+  }, [stateSignature, isNoSteerRunning]);
 
   const handleStateChange = (partial: Partial<SandboxState>) => {
     setState((prev) => ({ ...prev, ...partial }));
+  };
+
+  const handleRunNoSteerTest = () => {
+    if (isNoSteerRunning) return;
+    setIsNoSteerRunning(true);
+    const snapshot = { ...state };
+    const signatureSnapshot = stateSignature;
+    requestAnimationFrame(() => {
+      const result = runNoSteerTest(snapshot);
+      setNoSteerResult(result);
+      setNoSteerLastRunAt(Date.now());
+      lastResultSignatureRef.current = signatureSnapshot;
+      setIsNoSteerRunning(false);
+    });
   };
 
   const handleExportCsv = () => {
     if (!samples.length) return;
     const header = ["time_s", "lateral_accel_mps2", "lateral_accel_g", "yaw_rate_rad_s", "front_slip_deg", "rear_slip_deg"];
     const rows = samples.map((sample) => {
-      const lateralG = sample.lateralAcceleration / 9.81;
+      const lateralG = sample.lateralAcceleration / GRAVITY;
       const frontSlip = (sample.frontSlipAngle * 180) / Math.PI;
       const rearSlip = (sample.rearSlipAngle * 180) / Math.PI;
-      return [sample.time.toFixed(3), sample.lateralAcceleration.toFixed(3), lateralG.toFixed(3), sample.yawRate.toFixed(3), frontSlip.toFixed(3), rearSlip.toFixed(3)].join(",");
+      return [
+        sample.time.toFixed(3),
+        sample.lateralAcceleration.toFixed(3),
+        lateralG.toFixed(3),
+        sample.yawRate.toFixed(3),
+        frontSlip.toFixed(3),
+        rearSlip.toFixed(3)
+      ].join(",");
     });
     const csv = [header.join(","), ...rows].join("\n");
     const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
@@ -97,10 +145,10 @@ export function SandboxClient({ initialState, enable3D, isPro = false }: Sandbox
   };
 
   const handleExportPng = () => {
-    const canvas = canvasContainerRef.current?.querySelector('canvas');
+    const canvas = canvasContainerRef.current?.querySelector("canvas");
     if (!canvas) return;
-    const dataUrl = canvas.toDataURL('image/png');
-    const link = document.createElement('a');
+    const dataUrl = canvas.toDataURL("image/png");
+    const link = document.createElement("a");
     link.href = dataUrl;
     link.download = `vehiclelab-snapshot-${Date.now()}.png`;
     document.body.appendChild(link);
@@ -109,7 +157,7 @@ export function SandboxClient({ initialState, enable3D, isPro = false }: Sandbox
   };
 
   return (
-    <div className="space-y-12">
+    <div className="space-y-12" aria-busy={isPending}>
       <div className="grid gap-8 lg:grid-cols-[minmax(0,360px)_1fr]">
         <div>
           <ControlPanel state={state} onChange={handleStateChange} />
@@ -125,6 +173,7 @@ export function SandboxClient({ initialState, enable3D, isPro = false }: Sandbox
             {enable3D ? (
               <SandboxCanvas
                 telemetry={telemetry}
+                showTrack={state.showTrack}
                 watermark={<CanvasWatermark visible={!isPro} />}
                 containerRef={canvasContainerRef}
               />
@@ -139,8 +188,45 @@ export function SandboxClient({ initialState, enable3D, isPro = false }: Sandbox
                 <p className="text-lg font-semibold text-slate-900 dark:text-white">{roundTo(telemetry.yawRate, 2)} rad/s</p>
               </div>
               <div>
-                <p className="text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">Lateral accel</p>
-                <p className="text-lg font-semibold text-slate-900 dark:text-white">{roundTo(telemetry.lateralAcceleration / 9.81, 2)} g</p>
+                <div className="flex items-center justify-between gap-2">
+                  <p className="text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">Lateral accel</p>
+                  {state.lateralUnit === "g" ? (
+                    <InfoTooltip content={lateralTooltip} label="About lateral acceleration units" />
+                  ) : null}
+                </div>
+                <div className="mt-1 flex items-center justify-between gap-3">
+                  <p className="text-lg font-semibold text-slate-900 dark:text-white">
+                    {lateralValue} {lateralUnitLabel}
+                  </p>
+                  <div
+                    role="group"
+                    aria-label="Lateral acceleration units"
+                    className="flex items-center gap-1 rounded-full bg-slate-200/70 p-1 text-xs font-semibold text-slate-600 dark:bg-slate-800/60 dark:text-slate-300"
+                  >
+                    <button
+                      type="button"
+                      onClick={() => {
+                        if (state.lateralUnit !== "g") handleStateChange({ lateralUnit: "g" });
+                      }}
+                      data-active={state.lateralUnit === "g"}
+                      aria-pressed={state.lateralUnit === "g"}
+                      className="rounded-full px-2.5 py-1 transition hover:text-slate-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 data-[active=true]:bg-white data-[active=true]:text-slate-900 data-[active=true]:shadow-sm dark:data-[active=true]:bg-slate-900 dark:data-[active=true]:text-white"
+                    >
+                      g
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        if (state.lateralUnit !== "mps2") handleStateChange({ lateralUnit: "mps2" });
+                      }}
+                      data-active={state.lateralUnit === "mps2"}
+                      aria-pressed={state.lateralUnit === "mps2"}
+                      className="rounded-full px-2.5 py-1 transition hover:text-slate-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 data-[active=true]:bg-white data-[active=true]:text-slate-900 data-[active=true]:shadow-sm dark:data-[active=true]:bg-slate-900 dark:data-[active=true]:text-white"
+                    >
+                      m/s^2
+                    </button>
+                  </div>
+                </div>
               </div>
               <div>
                 <p className="text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">Balance</p>
@@ -149,6 +235,26 @@ export function SandboxClient({ initialState, enable3D, isPro = false }: Sandbox
                 </span>
               </div>
             </div>
+          </div>
+
+          <div className="space-y-3">
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <h3 className="text-sm font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">No-steer stability</h3>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleRunNoSteerTest}
+                disabled={isNoSteerRunning}
+              >
+                {isNoSteerRunning ? "Running no-steer test..." : "Run No-steer (delta = 0) test"}
+              </Button>
+            </div>
+            <NoSteerTestCard
+              result={noSteerResult}
+              lateralUnit={state.lateralUnit}
+              isRunning={isNoSteerRunning}
+              lastRunAt={noSteerLastRunAt}
+            />
           </div>
 
           <div className="grid gap-4 rounded-3xl border border-slate-200 bg-white/70 p-5 shadow-sm dark:border-slate-800 dark:bg-slate-900/60">
@@ -162,11 +268,11 @@ export function SandboxClient({ initialState, enable3D, isPro = false }: Sandbox
             <div className="grid gap-3 sm:grid-cols-2">
               <div className="rounded-2xl border border-slate-200 bg-white/80 p-4 text-center shadow-inner dark:border-slate-800 dark:bg-slate-900/60">
                 <p className="text-xs uppercase tracking-wide text-slate-500 dark:text-slate-400">Front</p>
-                <p className="mt-1 text-xl font-semibold text-slate-900 dark:text-white">{slipAngles.front}°</p>
+                <p className="mt-1 text-xl font-semibold text-slate-900 dark:text-white">{slipAngles.front}{DEGREE_SYMBOL}</p>
               </div>
               <div className="rounded-2xl border border-slate-200 bg-white/80 p-4 text-center shadow-inner dark:border-slate-800 dark:bg-slate-900/60">
                 <p className="text-xs uppercase tracking-wide text-slate-500 dark:text-slate-400">Rear</p>
-                <p className="mt-1 text-xl font-semibold text-slate-900 dark:text-white">{slipAngles.rear}°</p>
+                <p className="mt-1 text-xl font-semibold text-slate-900 dark:text-white">{slipAngles.rear}{DEGREE_SYMBOL}</p>
               </div>
             </div>
             <div className="grid gap-3 sm:grid-cols-2">
@@ -202,10 +308,19 @@ export function SandboxClient({ initialState, enable3D, isPro = false }: Sandbox
           </div>
         </div>
         <div className="grid gap-4 lg:grid-cols-2">
-          <ChartPanel samples={samples} dataKey="lateralAcceleration" title="Lateral acceleration" unit="g" formatter={(value) => value / 9.81} />
+          <ChartPanel
+            samples={samples}
+            dataKey="lateralAcceleration"
+            title="Lateral acceleration"
+            unit={lateralUnitLabel}
+            formatter={lateralFormatter}
+            info={state.lateralUnit === "g" ? lateralTooltip : undefined}
+          />
           <ChartPanel samples={samples} dataKey="yawRate" title="Yaw rate" unit="rad/s" />
         </div>
       </div>
     </div>
   );
 }
+
+
