@@ -12,9 +12,17 @@ interface SandboxCanvasProps {
   telemetry: VehicleTelemetry;
   watermark: React.ReactNode;
   containerRef?: Ref<HTMLDivElement>;
+  showTrack: boolean;
 }
 
 const background = new Color("#e2e8f0");
+
+const wheelOffsets = [
+  { x: -0.75, z: 1.35, axle: "front" as const },
+  { x: 0.75, z: 1.35, axle: "front" as const },
+  { x: -0.75, z: -1.35, axle: "rear" as const },
+  { x: 0.75, z: -1.35, axle: "rear" as const }
+];
 
 function PrimitiveCar() {
   return (
@@ -39,7 +47,7 @@ function PrimitiveCar() {
   );
 }
 
-function Vehicle({ telemetry }: { telemetry: VehicleTelemetry }) {
+function Vehicle({ telemetry, showTrack }: { telemetry: VehicleTelemetry; showTrack: boolean }) {
   const [rotation, setRotation] = useState(() => new Euler(0, 0, 0));
   const [position, setPosition] = useState(() => new Vector3(0, 0, 0));
 
@@ -60,11 +68,50 @@ function Vehicle({ telemetry }: { telemetry: VehicleTelemetry }) {
   return (
     <group position={position} rotation={rotation}>
       <PrimitiveCar />
+      {showTrack &&
+        wheelOffsets.map(({ x, z, axle }) => (
+          <mesh key={`${axle}-${x}-${z}`} position={[x, 0.02, z]} rotation={[-Math.PI / 2, 0, 0]}>
+            <planeGeometry args={[0.62, 0.36]} />
+            <meshStandardMaterial
+              color={axle === "front" ? "#38bdf8" : "#f97316"}
+              opacity={0.45}
+              transparent
+              roughness={0.4}
+              metalness={0.1}
+            />
+          </mesh>
+        ))}
     </group>
   );
 }
 
-export function SandboxCanvas({ telemetry, watermark, containerRef }: SandboxCanvasProps) {
+function TrackSurface() {
+  const lanePositions = [-3.5, 0, 3.5];
+  const edgePositions = [-7.5, 7.5];
+
+  return (
+    <group rotation={[-Math.PI / 2, 0, 0]}>
+      <mesh receiveShadow>
+        <planeGeometry args={[42, 54]} />
+        <meshStandardMaterial color="#1f2937" roughness={0.95} metalness={0.05} />
+      </mesh>
+      {lanePositions.map((x) => (
+        <mesh key={`lane-${x}`} position={[x, 0.01, 0]}>
+          <planeGeometry args={[0.25, 48]} />
+          <meshStandardMaterial color="#cbd5f5" transparent opacity={0.28} roughness={0.4} />
+        </mesh>
+      ))}
+      {edgePositions.map((x) => (
+        <mesh key={`edge-${x}`} position={[x, 0.005, 0]}>
+          <planeGeometry args={[0.18, 48]} />
+          <meshStandardMaterial color="#64748b" transparent opacity={0.4} roughness={0.5} />
+        </mesh>
+      ))}
+    </group>
+  );
+}
+
+export function SandboxCanvas({ telemetry, watermark, containerRef, showTrack }: SandboxCanvasProps) {
   const [dpr, setDpr] = useState(1);
 
   useEffect(() => {
@@ -72,7 +119,10 @@ export function SandboxCanvas({ telemetry, watermark, containerRef }: SandboxCan
   }, []);
 
   return (
-    <div ref={containerRef} className="relative h-[420px] w-full overflow-hidden rounded-3xl border border-slate-200 bg-gradient-to-br from-slate-100 via-white to-slate-200 shadow-inner dark:border-slate-800 dark:bg-gradient-to-br dark:from-slate-900 dark:via-slate-950 dark:to-slate-900">
+    <div
+      ref={containerRef}
+      className="relative h-[420px] w-full overflow-hidden rounded-3xl border border-slate-200 bg-gradient-to-br from-slate-100 via-white to-slate-200 shadow-inner dark:border-slate-800 dark:bg-gradient-to-br dark:from-slate-900 dark:via-slate-950 dark:to-slate-900"
+    >
       <Canvas shadows dpr={dpr} gl={{ antialias: true }}>
         <color attach="background" args={[background]} />
         <fog attach="fog" args={[background, 10, 60]} />
@@ -88,20 +138,18 @@ export function SandboxCanvas({ telemetry, watermark, containerRef }: SandboxCan
         <spotLight position={[-8, 8, -6]} angle={0.7} intensity={0.4} penumbra={0.5} />
 
         <group position={[0, 0, 0]}>
-          <mesh receiveShadow rotation={[-Math.PI / 2, 0, 0]}>
-            <planeGeometry args={[40, 40]} />
-            <meshStandardMaterial color="#e2e8f0" />
-          </mesh>
-          <Vehicle telemetry={telemetry} />
+          {showTrack ? (
+            <TrackSurface />
+          ) : (
+            <mesh receiveShadow rotation={[-Math.PI / 2, 0, 0]}>
+              <planeGeometry args={[40, 40]} />
+              <meshStandardMaterial color="#e2e8f0" />
+            </mesh>
+          )}
+          <Vehicle telemetry={telemetry} showTrack={showTrack} />
         </group>
 
-        <ContactShadows
-          position={[0, 0.01, 0]}
-          opacity={0.65}
-          scale={12}
-          blur={1.4}
-          far={20}
-        />
+        <ContactShadows position={[0, 0.01, 0]} opacity={0.65} scale={12} blur={1.4} far={20} />
         <Environment preset="city" />
         <OrbitControls enablePan={false} enableZoom={false} maxPolarAngle={Math.PI / 2.2} />
       </Canvas>

@@ -12,6 +12,8 @@ export const sandboxStateSchema = z.object({
   manoeuvre: z.enum(["skidpad", "lane-change"]).default("skidpad"),
   skidpadRadius: z.coerce.number().min(10).max(80).default(20),
   duration: z.coerce.number().min(4).max(20).default(12),
+  showTrack: z.coerce.boolean().default(true),
+  lateralUnit: z.enum(["g", "mps2"]).default("g"),
   camber: z.coerce.number().min(-5).max(5).default(0),
   springRate: z.coerce.number().min(20).max(160).default(80),
   damper: z.coerce.number().min(1000).max(4000).default(2200),
