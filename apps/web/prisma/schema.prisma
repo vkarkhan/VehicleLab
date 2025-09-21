@@ -8,45 +8,33 @@ datasource db {
 }
 
 model User {
-  id                 String        @id @default(cuid())
-  email              String        @unique
-  stripeCustomerId   String?       @unique
-  razorpayCustomerId String?       @unique
-  createdAt          DateTime      @default(now())
+  id                 String   @id @default(cuid())
+  email              String   @unique
+  stripeCustomerId   String?  @unique
+  razorpayCustomerId String?  @unique
+  createdAt          DateTime @default(now())
   entitlements       Entitlement[]
   presets            Preset[]
   accounts           Account[]
   sessions           Session[]
 }
 
-enum PlanType {
-  PRO_MONTHLY
-  PRO_YEARLY
-  LIFETIME
-}
-
-enum EntitlementStatus {
-  active
-  canceled
-}
-
 model Entitlement {
-  id               String            @id @default(cuid())
-  user             User              @relation(fields: [userId], references: [id])
+  id               String   @id @default(cuid())
+  user             User     @relation(fields: [userId], references: [id])
   userId           String
-  plan             PlanType
-  status           EntitlementStatus @default(active)
+  plan             String
+  status           String   @default("active")
   currentPeriodEnd DateTime?
-  createdAt        DateTime          @default(now())
-  updatedAt        DateTime          @updatedAt
-
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
   @@unique([userId, plan])
 }
 
 model Preset {
   id        String   @id @default(cuid())
   name      String
-  payload   Json
+  payload   String
   isPublic  Boolean  @default(false)
   user      User?    @relation(fields: [userId], references: [id])
   userId    String?
@@ -55,22 +43,21 @@ model Preset {
 }
 
 model Account {
-  id                String  @id @default(cuid())
-  userId            String
-  type              String
-  provider          String
-  providerAccountId String
-  refresh_token     String?
-  access_token      String?
-  expires_at        Int?
-  token_type        String?
-  scope             String?
-  id_token          String?
-  session_state     String?
-  oauth_token       String?
+  id                 String  @id @default(cuid())
+  userId             String
+  type               String
+  provider           String
+  providerAccountId  String
+  refresh_token      String?
+  access_token       String?
+  expires_at         Int?
+  token_type         String?
+  scope              String?
+  id_token           String?
+  session_state      String?
+  oauth_token        String?
   oauth_token_secret String?
-  user              User    @relation(fields: [userId], references: [id], onDelete: Cascade)
-
+  user               User    @relation(fields: [userId], references: [id], onDelete: Cascade)
   @@unique([provider, providerAccountId])
 }
 
@@ -86,6 +73,5 @@ model VerificationToken {
   identifier String
   token      String   @unique
   expires    DateTime
-
   @@unique([identifier, token])
 }

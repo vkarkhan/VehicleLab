@@ -12,8 +12,10 @@
     "typecheck": "tsc --noEmit",
     "test": "playwright test",
     "content": "contentlayer build",
-    "prepare": "prisma generate",
-    "lighthouse": "node scripts/lighthouse.mjs"
+    "lighthouse": "node scripts/lighthouse.mjs",
+    "db:generate": "prisma generate",
+    "db:push": "prisma db push",
+    "db:studio": "prisma studio"
   },
   "dependencies": {
     "@auth/prisma-adapter": "^1.5.0",

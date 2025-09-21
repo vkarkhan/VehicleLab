@@ -17,7 +17,11 @@ export async function POST(request: NextRequest) {
   }
 
   try {
-    const subscription = await createRazorpaySubscription({ userId: session.user.id, plan, email: session.user.email });
+    const subscription = (await createRazorpaySubscription({ userId: session.user.id, plan, email: session.user.email })) as unknown as {
+      id: string;
+      status: string;
+      short_url?: string | null;
+    };
     return NextResponse.json({
       id: subscription.id,
       status: subscription.status,
