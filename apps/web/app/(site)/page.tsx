@@ -1,3 +1,4 @@
+import dynamic from "next/dynamic";
 import Link from "next/link";
 
 import { Card } from "@/components/Card";
@@ -5,46 +6,61 @@ import { PingButton } from "@/components/ping-button";
 import { Section } from "@/components/Section";
 import { getBlogPosts, getGuides } from "@/lib/contentlayer";
 
+const HeroVisual = dynamic(async () => {
+  const mod = await import("@/components/hero-visual");
+  return mod.HeroVisual;
+}, {
+  ssr: false,
+  loading: () => (
+    <div className="relative aspect-video w-full overflow-hidden rounded-[1.75rem] border border-slate-200/60 bg-gradient-to-br from-white via-slate-100 to-slate-200 opacity-80 shadow-soft dark:border-slate-800 dark:from-slate-900 dark:via-slate-900 dark:to-slate-950" />
+  )
+});
+
 export default function HomePage() {
   const guides = getGuides().slice(0, 3);
   const posts = getBlogPosts().slice(0, 2);
 
   return (
     <div className="space-y-24 pb-20">
-      <section className="relative overflow-hidden bg-gradient-to-br from-white via-slate-50 to-slate-100 py-24 dark:from-slate-950 dark:via-slate-900 dark:to-slate-900">
-        <div className="mx-auto flex w-full max-w-6xl flex-col gap-12 px-4 sm:px-6 lg:flex-row lg:items-center lg:px-8">
-          <div className="flex-1 space-y-6">
-            <span className="inline-flex items-center rounded-full bg-brand-500/10 px-4 py-1 text-sm font-medium text-brand-600 dark:text-brand-300">
-              VehicleLab
+      <section className="relative isolate overflow-hidden bg-gradient-to-br from-white via-slate-50/90 to-slate-100/80 py-24 dark:from-slate-950 dark:via-slate-900/80 dark:to-slate-900">
+        <div className="pointer-events-none absolute inset-0 -z-10 bg-[radial-gradient(circle_at_top,_rgba(99,102,241,0.16),_transparent_55%)] dark:bg-[radial-gradient(circle_at_top,_rgba(99,102,241,0.24),_transparent_60%)]" aria-hidden />
+        <div className="pointer-events-none absolute inset-x-0 top-0 -z-10 h-px bg-gradient-to-r from-transparent via-white/60 to-transparent dark:via-white/10" aria-hidden />
+        <div className="mx-auto flex w-full max-w-6xl flex-col gap-14 px-4 sm:px-6 lg:flex-row lg:items-center lg:px-8">
+          <div className="flex-1 max-w-2xl space-y-8">
+            <span className="inline-flex select-none items-center gap-2 rounded-full border border-transparent bg-white/80 px-4 py-1 text-xs font-semibold uppercase tracking-[0.2em] text-slate-600 shadow-[0_10px_30px_-24px_rgba(79,70,229,0.6)] backdrop-blur-sm dark:bg-white/10 dark:text-slate-200">
+              VehicleLab Platform
             </span>
-            <h1 className="text-4xl font-semibold tracking-tight text-slate-900 sm:text-5xl dark:text-white">
-              Vehicle dynamics sandbox built for modern teams and curious engineers.
+            <h1 className="font-display text-4xl leading-tight tracking-tight text-slate-900 sm:text-5xl lg:text-6xl dark:text-white">
+              A premium vehicle dynamics sandbox for modern racing and research teams.
             </h1>
-            <p className="text-lg text-slate-600 dark:text-slate-300">
-              Experiment with tyre grip, weight transfer, and steering inputs in a responsive WebGL sandbox. Capture insights
-              using interactive charts, export reports, and collaborate with your team.
+            <p className="max-w-xl text-lg leading-relaxed text-slate-600 dark:text-slate-300">
+              Build intuition faster with live telemetry, rich reporting, and collaborative exports. Tune tyres, aero, and weight distribution while the preview responds instantly to every tweak.
             </p>
             <div className="flex flex-wrap items-center gap-4">
               <Link
                 href="/vehicellab"
-                className="inline-flex items-center rounded-full bg-slate-900 px-6 py-3 text-base font-semibold text-white shadow-soft transition hover:-translate-y-0.5 hover:bg-brand-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:ring-offset-2 dark:bg-white dark:text-slate-950"
+                aria-label="Launch the VehicleLab sandbox"
+                className="group inline-flex items-center justify-center gap-2 rounded-full bg-gradient-to-r from-slate-900 via-brand-700 to-brand-500 px-7 py-3 text-sm font-semibold uppercase tracking-wide text-white shadow-[0_22px_60px_-35px_rgba(79,70,229,0.85)] transition duration-300 hover:-translate-y-0.5 hover:shadow-[0_26px_70px_-34px_rgba(79,70,229,0.9)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:ring-offset-2 dark:from-white dark:via-brand-200 dark:to-brand-500 dark:text-slate-900"
               >
                 Launch the sandbox
               </Link>
               <Link
                 href="/guides"
-                className="inline-flex items-center rounded-full border border-slate-300 px-6 py-3 text-base font-semibold text-slate-700 transition hover:border-brand-400 hover:text-brand-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:ring-offset-2 dark:border-slate-700 dark:text-slate-200"
+                aria-label="Open the VehicleLab guides"
+                className="inline-flex items-center justify-center gap-2 rounded-full border border-slate-200/70 bg-white/70 px-7 py-3 text-sm font-semibold uppercase tracking-wide text-slate-700 shadow-[0_12px_36px_-28px_rgba(15,23,42,0.6)] transition duration-300 hover:border-brand-300 hover:text-brand-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-400 focus-visible:ring-offset-2 dark:border-white/10 dark:bg-slate-900/40 dark:text-slate-200"
               >
                 Explore guides
               </Link>
             </div>
+            <p className="text-sm font-medium text-slate-500 dark:text-slate-400">
+              No installs, just open the browser and start iterating.
+            </p>
           </div>
           <div className="flex-1">
-            <div className="relative rounded-3xl border border-slate-200 bg-white p-6 shadow-lg dark:border-slate-800 dark:bg-slate-900">
-              <div className="aspect-video w-full rounded-2xl bg-gradient-to-br from-brand-500/20 via-transparent to-brand-500/10" />
+            <div className="relative rounded-3xl border border-white/60 bg-white/60 p-6 shadow-[0_30px_60px_-40px_rgba(79,70,229,0.6)] backdrop-blur-md dark:border-white/10 dark:bg-slate-950/40">
+              <HeroVisual />
               <p className="mt-4 text-sm text-slate-500 dark:text-slate-400">
-                Visualise yaw rate, lateral acceleration, and slip angles as you iterate on your setup. The sandbox updates in
-                real-time with every control input.
+                Visualise yaw rate, lateral acceleration, and slip angles as you iterate on your setup. The sandbox updates in real-time with every control input.
               </p>
             </div>
           </div>
