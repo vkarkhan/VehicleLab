@@ -52,9 +52,22 @@ export const BlogPost = defineDocumentType(() => ({
   }
 }));
 
+export const Profile = defineDocumentType(() => ({
+  name: "Profile",
+  filePathPattern: `profile.json`,
+  contentType: "data",
+  fields: {
+    name: { type: "string", required: true },
+    tagline: { type: "string", required: true },
+    showLogos: { type: "boolean" },
+    enable3D: { type: "boolean" },
+    enableAnalytics: { type: "boolean" }
+  }
+}));
+
 export default makeSource({
   contentDirPath: "content",
-  documentTypes: [Guide, BlogPost],
+  documentTypes: [Guide, BlogPost, Profile],
   mdx: {
     remarkPlugins: [remarkGfm],
     rehypePlugins: [rehypeSlug, [rehypeAutolinkHeadings, { behavior: "wrap" }]]
