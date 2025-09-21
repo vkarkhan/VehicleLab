@@ -39,6 +39,7 @@ export const authConfig: NextAuthConfig = {
   },
   providers: [
     EmailProvider({
+      server: process.env.EMAIL_SERVER ?? "smtp://localhost:1025",
       from: fromAddress,
       maxAge: 60 * 60, // 1 hour
       sendVerificationRequest: async ({ identifier, url }) => {

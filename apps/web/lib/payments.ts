@@ -3,7 +3,7 @@ import Razorpay from "razorpay";
 
 import { prisma } from "@/lib/prisma";
 
-const STRIPE_API_VERSION: Stripe.LatestApiVersion = "2024-06-20";
+const STRIPE_API_VERSION: Stripe.LatestApiVersion = "2023-10-16";
 
 export function getStripeClient() {
   const key = process.env.STRIPE_SECRET_KEY;
@@ -188,6 +188,7 @@ export async function createRazorpaySubscription({ userId, plan, email }: { user
     plan_id: planId,
     customer_notify: 1,
     quantity: 1,
+    total_count: 1,
     notes: { userId }
   });
   await prisma.user.update({ where: { id: userId }, data: { razorpayCustomerId: subscription.customer_id ?? null } });

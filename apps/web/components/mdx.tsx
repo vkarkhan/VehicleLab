@@ -26,18 +26,47 @@ const components: MDXComponents = {
   ol: ({ className, ...props }) => (
     <ol className={cn("my-6 ml-6 list-decimal space-y-2 text-slate-700 dark:text-slate-300", className)} {...props} />
   ),
-  a: ({ className, ...props }) => (
-    <Link className={cn("font-semibold text-brand-600 hover:text-brand-500", className)} {...props} />
-  ),
-  img: (props) => (
-    <Image
-      {...props}
-      alt={props.alt ?? ""}
-      width={props.width ? Number(props.width) : 1200}
-      height={props.height ? Number(props.height) : 800}
-      className="rounded-3xl border border-slate-200 object-cover shadow-sm dark:border-slate-800"
-    />
-  ),
+  a: ({ className, href, ...props }) => {
+    if (!href) {
+      return <a className={cn("font-semibold text-brand-600 hover:text-brand-500", className)} {...props} />;
+    }
+
+    return (
+      <Link
+        className={cn("font-semibold text-brand-600 hover:text-brand-500", className)}
+        href={href}
+        {...props}
+      />
+    );
+  },
+  img: ({ src, alt, width, height, ...props }) => {
+    const resolvedAlt = alt ?? "";
+    const resolvedWidth = width ? Number(width) : 1200;
+    const resolvedHeight = height ? Number(height) : 800;
+
+    if (!src) {
+      return (
+        <img
+          {...props}
+          alt={resolvedAlt}
+          width={resolvedWidth}
+          height={resolvedHeight}
+          className="rounded-3xl border border-slate-200 object-cover shadow-sm dark:border-slate-800"
+        />
+      );
+    }
+
+    return (
+      <Image
+        {...props}
+        src={src}
+        alt={resolvedAlt}
+        width={resolvedWidth}
+        height={resolvedHeight}
+        className="rounded-3xl border border-slate-200 object-cover shadow-sm dark:border-slate-800"
+      />
+    );
+  },
   Admonition,
   AdSlot
 };

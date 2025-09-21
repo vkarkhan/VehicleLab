@@ -124,7 +124,7 @@ export function PriceTable({ currency, onCheckout, onLifetime, loading = false }
             <span className="ml-1 text-base font-normal text-slate-600 dark:text-slate-300"> {priceLabel}</span>
           </p>
           {monthlyEquivalent && (
-            <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">That's {monthlyEquivalent} billed annually.</p>
+            <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">That&apos;s {monthlyEquivalent} billed annually.</p>
           )}
         </div>
 

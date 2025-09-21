@@ -27,27 +27,34 @@ vehiclelab/
 2. **npm:** Version 10+ (ships with Node 22).
 3. **SQLite:** Bundled with Node on macOS/Linux; Windows users can rely on Prisma’s binary.
 
-## Getting Started
+## Getting Started (Local SQLite)
 ```bash
-nvm use           # activates Node 22.9.0
-npm install       # installs workspace deps (creates node_modules + package-lock)
-cp .env.example .env.local
-npm run dev       # launches Next.js dev server with API routes
+nvm use
+npm install
+cp .env.local.example .env.local
+# ensure: DATABASE_URL=file:./apps/web/data/app.db
+npm run db:setup
+npm run dev
 ```
 
 Open <http://localhost:3000>, then click **“Call /api/ping”** on the homepage to verify the API handler responds.
+
+Note: Postgres and provider-specific column types will return in a follow-up PR once local testing wraps up.
 
 ### Available Scripts
 - `npm run dev` – Starts `@app/web` in dev mode (HMR + API routes).
 - `npm run build` – Builds the Next.js app for production.
 - `npm run start` – Runs the production build locally.
+- `npm run db:setup` – Runs Prisma generate + push via the app workspace.
 - `npm run dev -w @app/web` – Direct access to the web workspace.
 - Within `apps/web`:
   - `npm run lint` – ESLint via `next lint`.
   - `npm run typecheck` – TypeScript diagnostics.
   - `npm run test` – Playwright tests (requires browsers installed).
   - `npm run content` – Regenerate Contentlayer output manually.
-  - `npm run prepare` – Regenerates Prisma client (executed automatically by npm during install).
+  - `npm run db:generate` – Regenerates the Prisma client.
+  - `npm run db:push` – Applies the Prisma schema to the local SQLite file.
+  - `npm run db:studio` – Opens Prisma Studio against the local database.
 
 ## Environment Variables
 All configuration lives in `.env.local`. Start from `.env.example` which documents every supported variable:
