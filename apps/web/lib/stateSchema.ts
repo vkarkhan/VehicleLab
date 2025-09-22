@@ -13,11 +13,17 @@ export const sandboxStateSchema = z.object({
   skidpadRadius: z.coerce.number().min(10).max(80).default(20),
   duration: z.coerce.number().min(4).max(20).default(12),
   showTrack: z.coerce.boolean().default(true),
+  alignmentDebug: z.coerce.boolean().default(false),
   lateralUnit: z.enum(["g", "mps2"]).default("g"),
   camber: z.coerce.number().min(-5).max(5).default(0),
   springRate: z.coerce.number().min(20).max(160).default(80),
   damper: z.coerce.number().min(1000).max(4000).default(2200),
-  antiRoll: z.coerce.number().min(0).max(1).default(0.5)
+  antiRoll: z.coerce.number().min(0).max(1).default(0.5),
+  wheelRadiusMeters: z.coerce.number().min(0.25).max(0.45).default(0.34),
+  rideHeightMeters: z.coerce.number().min(0).max(0.4).default(0.14),
+  modelOriginOffsetY: z.coerce.number().min(-0.3).max(0.3).default(-0.08),
+  visualCamberDeg: z.coerce.number().min(-5).max(5).default(0),
+  visualCrownDeg: z.coerce.number().min(-3).max(3).default(0)
 });
 
 export type SandboxState = z.infer<typeof sandboxStateSchema>;

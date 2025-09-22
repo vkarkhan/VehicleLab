@@ -15,6 +15,7 @@ import type { SandboxState } from "@/lib/stateSchema";
 import { defaultSandboxState, serializeStateToSearchParams } from "@/lib/stateSchema";
 import { runNoSteerTest, type NoSteerTestResult } from "@/lib/noSteerTest";
 import { roundTo } from "@/lib/utils";
+import { speedToMetersPerSecond } from "@/lib/physics";
 
 import { useVehicleSimulation } from "./useVehicleSimulation";
 
@@ -34,6 +35,8 @@ interface SandboxClientProps {
 export function SandboxClient({ initialState, enable3D, isPro = false }: SandboxClientProps) {
   const [state, setState] = useState<SandboxState>(initialState);
   const { samples, telemetry } = useVehicleSimulation(state);
+  // Convert UI speed (km/h) to m/s for scene animation.
+  const vehicleSpeedMps = useMemo(() => speedToMetersPerSecond(state.speed), [state.speed]);
   const canvasContainerRef = useRef<HTMLDivElement | null>(null);
   const router = useRouter();
   const pathname = usePathname();
@@ -176,6 +179,14 @@ export function SandboxClient({ initialState, enable3D, isPro = false }: Sandbox
                 showTrack={state.showTrack}
                 watermark={<CanvasWatermark visible={!isPro} />}
                 containerRef={canvasContainerRef}
+                wheelRadiusMeters={state.wheelRadiusMeters}
+                rideHeightMeters={state.rideHeightMeters}
+                modelOriginOffsetY={state.modelOriginOffsetY}
+                alignmentDebug={state.alignmentDebug}
+                camberDeg={state.visualCamberDeg}
+                crownDeg={state.visualCrownDeg}
+                vehicleSpeedMps={vehicleSpeedMps}
+                frontWeightDistribution={state.weightDistributionFront}
               />
             ) : (
               <div className="flex h-[420px] items-center justify-center rounded-3xl border border-dashed border-slate-300 bg-white text-center text-sm text-slate-500 dark:border-slate-700 dark:bg-slate-900">
@@ -322,5 +333,3 @@ export function SandboxClient({ initialState, enable3D, isPro = false }: Sandbox
     </div>
   );
 }
-
-

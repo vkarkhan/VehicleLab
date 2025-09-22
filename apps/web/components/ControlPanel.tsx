@@ -295,6 +295,127 @@ export function ControlPanel({ state, onChange }: ControlPanelProps) {
             aria-label="Toggle track and contact patches"
           />
         </div>
+        <div className="space-y-4 rounded-2xl border border-slate-200 bg-white/60 p-5 shadow-inner dark:border-slate-800 dark:bg-slate-900/40">
+          <div className="flex items-start justify-between gap-3">
+            <div>
+              <p className="text-sm font-medium text-slate-900 dark:text-white">Alignment debug</p>
+              <p className="text-xs text-slate-500 dark:text-slate-400">Reveal wheel centres and the ground reference to verify placement.</p>
+            </div>
+            <Switch
+              checked={state.alignmentDebug}
+              onCheckedChange={(value) => control("alignmentDebug", value)}
+              aria-label="Toggle alignment debug helpers"
+            />
+          </div>
+          <div className="grid gap-4">
+            <div>
+              <Label htmlFor={`${baseId}-wheel-radius`}>Wheel radius (m)</Label>
+              <div className="mt-2 flex items-center gap-3">
+                <Slider
+                  value={[state.wheelRadiusMeters]}
+                  min={0.25}
+                  max={0.45}
+                  step={0.005}
+                  onValueChange={([value]) => control("wheelRadiusMeters", roundTo(value, 3))}
+                  aria-label="Wheel radius in metres"
+                />
+                <Input
+                  id={`${baseId}-wheel-radius`}
+                  type="number"
+                  inputMode="decimal"
+                  min={0.25}
+                  max={0.45}
+                  step="0.001"
+                  value={state.wheelRadiusMeters.toFixed(3)}
+                  onChange={(event) => control("wheelRadiusMeters", Number(event.target.value))}
+                  className="w-24"
+                />
+              </div>
+            </div>
+            <div>
+              <Label htmlFor={`${baseId}-ride-height`}>Ride height (m)</Label>
+              <div className="mt-2 flex items-center gap-3">
+                <Slider
+                  value={[state.rideHeightMeters]}
+                  min={0}
+                  max={0.4}
+                  step={0.005}
+                  onValueChange={([value]) => control("rideHeightMeters", roundTo(value, 3))}
+                  aria-label="Ride height in metres"
+                />
+                <Input
+                  id={`${baseId}-ride-height`}
+                  type="number"
+                  inputMode="decimal"
+                  min={0}
+                  max={0.4}
+                  step="0.001"
+                  value={state.rideHeightMeters.toFixed(3)}
+                  onChange={(event) => control("rideHeightMeters", Number(event.target.value))}
+                  className="w-24"
+                />
+              </div>
+            </div>
+            <div>
+              <Label htmlFor={`${baseId}-origin-offset`}>Model origin offset (m)</Label>
+              <div className="mt-2 flex items-center gap-3">
+                <Slider
+                  value={[state.modelOriginOffsetY]}
+                  min={-0.3}
+                  max={0.3}
+                  step={0.005}
+                  onValueChange={([value]) => control("modelOriginOffsetY", roundTo(value, 3))}
+                  aria-label="Model origin offset"
+                />
+                <Input
+                  id={`${baseId}-origin-offset`}
+                  type="number"
+                  inputMode="decimal"
+                  min={-0.3}
+                  max={0.3}
+                  step="0.001"
+                  value={state.modelOriginOffsetY.toFixed(3)}
+                  onChange={(event) => control("modelOriginOffsetY", Number(event.target.value))}
+                  className="w-24"
+                />
+              </div>
+            </div>
+          </div>
+          <div className="grid gap-4 sm:grid-cols-2">
+            <div>
+              <Label htmlFor={`${baseId}-visual-camber`}>Camber (deg)</Label>
+              <div className="mt-2 flex items-center gap-3">
+                <Slider
+                  value={[state.visualCamberDeg]}
+                  min={-5}
+                  max={5}
+                  step={0.1}
+                  onValueChange={([value]) => control("visualCamberDeg", roundTo(value, 1))}
+                  aria-label="Visual camber angle"
+                />
+                <div className="w-16 text-right text-sm font-semibold text-slate-700 dark:text-slate-200">
+                  {roundTo(state.visualCamberDeg, 1)}°
+                </div>
+              </div>
+            </div>
+            <div>
+              <Label htmlFor={`${baseId}-visual-crown`}>Crown (deg)</Label>
+              <div className="mt-2 flex items-center gap-3">
+                <Slider
+                  value={[state.visualCrownDeg]}
+                  min={-3}
+                  max={3}
+                  step={0.1}
+                  onValueChange={([value]) => control("visualCrownDeg", roundTo(value, 1))}
+                  aria-label="Visual crown angle"
+                />
+                <div className="w-16 text-right text-sm font-semibold text-slate-700 dark:text-slate-200">
+                  {roundTo(state.visualCrownDeg, 1)}°
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
 
       <div className="space-y-3">
