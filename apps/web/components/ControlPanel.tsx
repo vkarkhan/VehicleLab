@@ -356,30 +356,6 @@ export function ControlPanel({ state, onChange }: ControlPanelProps) {
                 />
               </div>
             </div>
-            <div>
-              <Label htmlFor={`${baseId}-origin-offset`}>Model origin offset (m)</Label>
-              <div className="mt-2 flex items-center gap-3">
-                <Slider
-                  value={[state.modelOriginOffsetY]}
-                  min={-0.3}
-                  max={0.3}
-                  step={0.005}
-                  onValueChange={([value]) => control("modelOriginOffsetY", roundTo(value, 3))}
-                  aria-label="Model origin offset"
-                />
-                <Input
-                  id={`${baseId}-origin-offset`}
-                  type="number"
-                  inputMode="decimal"
-                  min={-0.3}
-                  max={0.3}
-                  step="0.001"
-                  value={state.modelOriginOffsetY.toFixed(3)}
-                  onChange={(event) => control("modelOriginOffsetY", Number(event.target.value))}
-                  className="w-24"
-                />
-              </div>
-            </div>
           </div>
           <div className="grid gap-4 sm:grid-cols-2">
             <div>

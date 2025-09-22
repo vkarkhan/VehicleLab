@@ -4,10 +4,29 @@ import { ContactShadows, Environment, OrbitControls, PerspectiveCamera } from "@
 import { Canvas } from "@react-three/fiber";
 import { useEffect, useMemo, useRef, useState } from "react";
 import type { Ref } from "react";
-import { Color, MathUtils } from "three";
+import { CanvasTexture, Color, MathUtils, RepeatWrapping, SRGBColorSpace } from "three";
 
-import { deriveKinematics, type PhysicsState, type WheelId, type Vector3Tuple } from "@/lib/kinematics";
+import { VehicleRig } from "@/components/VehicleRig";
+import { type PhysicsState, type Vector3Tuple } from "@/lib/kinematics";
 import type { VehicleTelemetry } from "@/lib/physics";
+
+const background = new Color("#e2e8f0");
+
+const GROUND_Y = 0;
+const CONTACT_SHADOW_OFFSET = 0.001;
+const VEHICLE_WHEELBASE = 2.8;
+const TRACK_FRONT = 1.6;
+const TRACK_REAR = 1.6;
+const ROAD_WIDTH = 16;
+const ROAD_LENGTH = 64;
+const LANE_STRIPE_WIDTH = 0.18;
+const EDGE_STRIPE_WIDTH = 0.22;
+const TEXTURE_REPEAT_X = 12;
+const TEXTURE_REPEAT_Z = 24;
+const VEGETATION_OFFSET = ROAD_WIDTH * 0.5 + 2.2;
+
+const laneStripeOffsets = [-3.2, 0, 3.2];
+const roadEdgeOffsets = [-ROAD_WIDTH * 0.5 + 0.6, ROAD_WIDTH * 0.5 - 0.6];
 
 interface SandboxCanvasProps {
   telemetry: VehicleTelemetry;
@@ -16,7 +35,6 @@ interface SandboxCanvasProps {
   showTrack: boolean;
   wheelRadiusMeters: number;
   rideHeightMeters: number;
-  modelOriginOffsetY: number;
   alignmentDebug: boolean;
   camberDeg: number;
   crownDeg: number;
@@ -24,208 +42,146 @@ interface SandboxCanvasProps {
   frontWeightDistribution: number;
 }
 
-const background = new Color("#e2e8f0");
-
-const GROUND_Y = 0;
-const CONTACT_PATCH_OFFSET = 0.001;
-const CLEARANCE_THRESHOLD = 1e-3;
-const WHEEL_WIDTH = 0.32;
-const DEBUG_SPHERE_RADIUS = 0.045;
-const GUIDE_LINE_THICKNESS = 0.015;
-const VEHICLE_WHEELBASE = 2.8;
-const TRACK_FRONT = 1.6;
-const TRACK_REAR = 1.6;
-
-const wheelMeta: Record<WheelId, { axle: "front" | "rear" }> = {
-  frontLeft: { axle: "front" },
-  frontRight: { axle: "front" },
-  rearLeft: { axle: "rear" },
-  rearRight: { axle: "rear" }
-};
-
-function PrimitiveCar() {
-  return (
-    <group scale={1}>
-      <mesh castShadow position={[0, 0.25, 0]}>
-        <boxGeometry args={[1.9, 0.6, 4.2]} />
-        <meshStandardMaterial color="#334155" metalness={0.1} roughness={0.6} />
-      </mesh>
-      <mesh castShadow position={[0, 0.75, -0.3]}>
-        <boxGeometry args={[1.7, 0.5, 1.6]} />
-        <meshStandardMaterial color="#1e293b" metalness={0.2} roughness={0.4} />
-      </mesh>
-    </group>
-  );
+interface RoadSurfaceProps {
+  groundY: number;
+  rotation: Vector3Tuple;
 }
 
-interface VehicleProps {
-  telemetry: VehicleTelemetry;
-  showTrack: boolean;
-  rideHeightMeters: number;
-  wheelRadiusMeters: number;
-  modelOriginOffsetY: number;
-  alignmentDebug: boolean;
-  groundRotation: Vector3Tuple;
-  vehicleSpeedMps: number;
-  frontWeightDistribution: number;
+function buildAsphaltTextures(): { color: CanvasTexture; normal: CanvasTexture } | null {
+  if (typeof document === "undefined") return null;
+
+  const size = 256;
+  const createCanvas = () => {
+    const canvas = document.createElement("canvas");
+    canvas.width = size;
+    canvas.height = size;
+    return canvas;
+  };
+
+  const colorCanvas = createCanvas();
+  const colorCtx = colorCanvas.getContext("2d");
+  if (!colorCtx) return null;
+  const base = [46, 51, 57];
+  const noiseStrength = 20;
+  const colorData = colorCtx.createImageData(size, size);
+  for (let i = 0; i < colorData.data.length; i += 4) {
+    const noise = Math.random() * noiseStrength - noiseStrength / 2;
+    colorData.data[i] = base[0] + noise;
+    colorData.data[i + 1] = base[1] + noise;
+    colorData.data[i + 2] = base[2] + noise;
+    colorData.data[i + 3] = 255;
+  }
+  colorCtx.putImageData(colorData, 0, 0);
+
+  const normalCanvas = createCanvas();
+  const normalCtx = normalCanvas.getContext("2d");
+  if (!normalCtx) return null;
+  const normalData = normalCtx.createImageData(size, size);
+  for (let i = 0; i < normalData.data.length; i += 4) {
+    const nx = 128 + Math.random() * 10 - 5;
+    const ny = 128 + Math.random() * 10 - 5;
+    normalData.data[i] = nx;
+    normalData.data[i + 1] = ny;
+    normalData.data[i + 2] = 255;
+    normalData.data[i + 3] = 255;
+  }
+  normalCtx.putImageData(normalData, 0, 0);
+
+  const colorTexture = new CanvasTexture(colorCanvas);
+  colorTexture.wrapS = RepeatWrapping;
+  colorTexture.wrapT = RepeatWrapping;
+  colorTexture.repeat.set(TEXTURE_REPEAT_X, TEXTURE_REPEAT_Z);
+  colorTexture.colorSpace = SRGBColorSpace;
+  colorTexture.needsUpdate = true;
+
+  const normalTexture = new CanvasTexture(normalCanvas);
+  normalTexture.wrapS = RepeatWrapping;
+  normalTexture.wrapT = RepeatWrapping;
+  normalTexture.repeat.copy(colorTexture.repeat);
+  normalTexture.needsUpdate = true;
+
+  return { color: colorTexture, normal: normalTexture };
 }
 
-function Vehicle({
-  telemetry,
-  showTrack,
-  rideHeightMeters,
-  wheelRadiusMeters,
-  modelOriginOffsetY,
-  alignmentDebug,
-  groundRotation,
-  vehicleSpeedMps,
-  frontWeightDistribution
-}: VehicleProps) {
-  const [pose, setPose] = useState(() => ({ x: 0, z: 0, psi: 0, phi: 0 }));
-  const [wheelRotation, setWheelRotation] = useState(0);
-  const lastUpdateRef = useRef<number | null>(null);
+function RoadSurface({ groundY, rotation }: RoadSurfaceProps) {
+  const textures = useMemo(buildAsphaltTextures, []);
+  const colorTexture = textures?.color;
+  const normalTexture = textures?.normal;
 
   useEffect(() => {
-    const now = typeof performance !== "undefined" ? performance.now() : Date.now();
-    const last = lastUpdateRef.current ?? now;
-    const dt = Math.min((now - last) / 1000, 0.05);
-    lastUpdateRef.current = now;
-
-    if (dt > 0) {
-      const angularVelocity = vehicleSpeedMps / Math.max(wheelRadiusMeters, 1e-3);
-      setWheelRotation((prev) => MathUtils.euclideanModulo(prev + angularVelocity * dt, Math.PI * 2));
-    }
-
-    setPose((prev) => {
-      const nextPsi = prev.psi + telemetry.yawRate * dt;
-      const nextPhi = telemetry.lateralAcceleration * -0.02;
-      const timeScale = dt > 0 ? dt / 0.016 : 1;
-      const nextX = prev.x + Math.sin(nextPsi) * telemetry.lateralAcceleration * 0.002 * timeScale;
-      const nextZ = prev.z + Math.cos(nextPsi) * telemetry.lateralAcceleration * 0.002 * timeScale;
-      return { x: nextX, z: nextZ, psi: nextPsi, phi: nextPhi };
-    });
-  }, [telemetry, vehicleSpeedMps, wheelRadiusMeters]);
-
-  const { x, z, psi, phi } = pose;
-  const steeringAngle = telemetry.steeringAngle;
-
-  const physicsState = useMemo<PhysicsState>(() => {
-    const frontDistance = frontWeightDistribution * VEHICLE_WHEELBASE;
-    const rearDistance = VEHICLE_WHEELBASE - frontDistance;
-    return {
-      x,
-      z,
-      psi,
-      phi,
-      hRide: rideHeightMeters,
-      wheelbase: VEHICLE_WHEELBASE,
-      a: frontDistance,
-      b: rearDistance,
-      trackF: TRACK_FRONT,
-      trackR: TRACK_REAR,
-      wheelRadius: wheelRadiusMeters,
-      steer: steeringAngle,
-      groundY: GROUND_Y
+    if (!textures) return;
+    const { color, normal } = textures;
+    color.anisotropy = 4;
+    normal.anisotropy = 2;
+    return () => {
+      color.dispose();
+      normal.dispose();
     };
-  }, [frontWeightDistribution, phi, psi, rideHeightMeters, steeringAngle, wheelRadiusMeters, x, z]);
-
-  const kinematics = useMemo(() => deriveKinematics(physicsState), [physicsState]);
-  const chassisHeight = kinematics.body.position[1] - kinematics.groundY + modelOriginOffsetY;
-  const clearanceBaseline = kinematics.groundY + kinematics.wheelRadius;
+  }, [textures]);
 
   return (
-    <group>
-      <group position={[kinematics.body.position[0], kinematics.groundY, kinematics.body.position[2]]} rotation={[0, kinematics.body.yaw, 0]}>
-        <group position={[0, chassisHeight, 0]} rotation={[kinematics.body.roll, 0, 0]}>
-          <PrimitiveCar />
-        </group>
-      </group>
+    <group position={[0, groundY, 0]} rotation={rotation}>
+      <mesh receiveShadow>
+        <planeGeometry args={[ROAD_WIDTH, ROAD_LENGTH]} />
+        <meshStandardMaterial
+          color="#1f2733"
+          map={colorTexture ?? undefined}
+          normalMap={normalTexture ?? undefined}
+          roughness={0.9}
+          metalness={0.05}
+        />
+      </mesh>
 
-      {(Object.entries(kinematics.wheels) as [WheelId, Vector3Tuple][]).map(([id, center]) => {
-        const axle = wheelMeta[id].axle;
-        const steering = axle === "front" ? kinematics.steer : 0;
-        const clearance = center[1] - clearanceBaseline;
-        const debugColor = clearance < -CLEARANCE_THRESHOLD ? "#ef4444" : "#22c55e";
-        const contactPatchPosition: Vector3Tuple = [center[0], kinematics.contactPatchY, center[2]];
-
-        return (
-          <group key={id}>
-            <group position={center}>
-              <group rotation={[0, steering, 0]}>
-                <mesh castShadow rotation={[wheelRotation, 0, Math.PI / 2]}>
-                  <cylinderGeometry args={[kinematics.wheelRadius, kinematics.wheelRadius, WHEEL_WIDTH, 24]} />
-                  <meshStandardMaterial color="#0f172a" metalness={0.2} roughness={0.4} />
-                </mesh>
-              </group>
-            </group>
-
-            {showTrack ? (
-              <mesh position={contactPatchPosition} rotation={groundRotation}>
-                <planeGeometry args={[0.62, 0.36]} />
-                <meshStandardMaterial
-                  color={axle === "front" ? "#38bdf8" : "#f97316"}
-                  opacity={0.45}
-                  transparent
-                  roughness={0.4}
-                  metalness={0.1}
-                />
-              </mesh>
-            ) : null}
-
-            {alignmentDebug ? (
-              <group>
-                <mesh position={center}>
-                  <sphereGeometry args={[DEBUG_SPHERE_RADIUS, 16, 16]} />
-                  <meshStandardMaterial color={debugColor} />
-                </mesh>
-                <mesh position={[center[0], kinematics.groundY, center[2]]} rotation={groundRotation}>
-                  <planeGeometry args={[0.2, GUIDE_LINE_THICKNESS]} />
-                  <meshBasicMaterial color={debugColor} transparent opacity={debugColor === "#ef4444" ? 0.85 : 0.6} />
-                </mesh>
-              </group>
-            ) : null}
-          </group>
-        );
-      })}
-
-      {alignmentDebug ? (
-        <mesh position={[0, kinematics.groundY, 0]} rotation={groundRotation}>
-          <planeGeometry args={[14, GUIDE_LINE_THICKNESS]} />
-          <meshBasicMaterial color="#0ea5e9" transparent opacity={0.6} />
+      {laneStripeOffsets.map((offset) => (
+        <mesh key={"lane-" + offset} position={[offset, 0.002, 0]}>
+          <planeGeometry args={[LANE_STRIPE_WIDTH, ROAD_LENGTH * 0.92]} />
+          <meshStandardMaterial color="#f8fafc" transparent opacity={0.7} roughness={0.65} />
         </mesh>
-      ) : null}
+      ))}
+
+      {roadEdgeOffsets.map((offset) => (
+        <mesh key={"edge-" + offset} position={[offset, 0.001, 0]}>
+          <planeGeometry args={[EDGE_STRIPE_WIDTH, ROAD_LENGTH]} />
+          <meshStandardMaterial color="#94a3b8" transparent opacity={0.5} roughness={0.6} />
+        </mesh>
+      ))}
     </group>
   );
 }
 
-interface TrackSurfaceProps {
-  camberDeg: number;
-  crownDeg: number;
-}
+function RoadsideVegetation({ groundY }: { groundY: number }) {
+  const clusters = useMemo(() => {
+    const positions: { x: number; z: number; scale: number }[] = [];
+    const countPerSide = 6;
+    const spacing = ROAD_LENGTH / (countPerSide + 1);
+    const pseudoRandom = (seed: number) => (Math.sin(seed * 47.123) + 1) * 0.5;
 
-function TrackSurface({ camberDeg, crownDeg }: TrackSurfaceProps) {
-  const lanePositions = [-3.5, 0, 3.5];
-  const edgePositions = [-7.5, 7.5];
-  const camberRadians = MathUtils.degToRad(camberDeg);
-  const crownRadians = MathUtils.degToRad(crownDeg);
+    for (const side of [-1, 1]) {
+      for (let index = 0; index < countPerSide; index += 1) {
+        const z = -ROAD_LENGTH / 2 + spacing * (index + 1);
+        const jitter = pseudoRandom(index + (side === -1 ? 10 : 20));
+        const x = side * (VEGETATION_OFFSET + jitter * 1.4);
+        const scale = 0.7 + 0.5 * pseudoRandom(index + (side === -1 ? 30 : 40));
+        positions.push({ x, z, scale });
+      }
+    }
+
+    return positions;
+  }, []);
 
   return (
-    <group position={[0, GROUND_Y, 0]} rotation={[-Math.PI / 2 + camberRadians, 0, crownRadians]}>
-      <mesh receiveShadow>
-        <planeGeometry args={[42, 54]} />
-        <meshStandardMaterial color="#1f2937" roughness={0.95} metalness={0.05} />
-      </mesh>
-      {lanePositions.map((x) => (
-        <mesh key={`lane-${x}`} position={[x, 0.01, 0]}>
-          <planeGeometry args={[0.25, 48]} />
-          <meshStandardMaterial color="#cbd5f5" transparent opacity={0.28} roughness={0.4} />
-        </mesh>
-      ))}
-      {edgePositions.map((x) => (
-        <mesh key={`edge-${x}`} position={[x, 0.005, 0]}>
-          <planeGeometry args={[0.18, 48]} />
-          <meshStandardMaterial color="#64748b" transparent opacity={0.4} roughness={0.5} />
-        </mesh>
+    <group position={[0, groundY, 0]}>
+      {clusters.map(({ x, z, scale }, index) => (
+        <group key={"veg-" + index} position={[x, 0, z]} scale={scale}>
+          <mesh castShadow position={[0, 1.4, 0]}>
+            <coneGeometry args={[0.6, 2.6, 6]} />
+            <meshStandardMaterial color="#166534" roughness={0.5} metalness={0.05} />
+          </mesh>
+          <mesh position={[0, 0.6, 0]}>
+            <cylinderGeometry args={[0.12, 0.16, 1.2, 6]} />
+            <meshStandardMaterial color="#78350f" roughness={0.7} metalness={0.1} />
+          </mesh>
+        </group>
       ))}
     </group>
   );
@@ -238,7 +194,6 @@ export function SandboxCanvas({
   showTrack,
   wheelRadiusMeters,
   rideHeightMeters,
-  modelOriginOffsetY,
   alignmentDebug,
   camberDeg,
   crownDeg,
@@ -246,13 +201,59 @@ export function SandboxCanvas({
   frontWeightDistribution
 }: SandboxCanvasProps) {
   const [dpr, setDpr] = useState(1);
+  const [pose, setPose] = useState(() => ({ x: 0, z: 0, psi: 0, phi: 0 }));
+  const lastUpdateRef = useRef<number | null>(null);
   const camberRadians = useMemo(() => MathUtils.degToRad(camberDeg), [camberDeg]);
   const crownRadians = useMemo(() => MathUtils.degToRad(crownDeg), [crownDeg]);
-  const groundRotation = useMemo(() => [-Math.PI / 2 + camberRadians, 0, crownRadians] as Vector3Tuple, [camberRadians, crownRadians]);
+  const groundRotation = useMemo(
+    () => [-Math.PI / 2 + camberRadians, 0, crownRadians] as Vector3Tuple,
+    [camberRadians, crownRadians]
+  );
 
   useEffect(() => {
+    if (typeof window === "undefined") return;
     setDpr(Math.min(window.devicePixelRatio ?? 1, 1.5));
   }, []);
+
+  useEffect(() => {
+    const now = typeof performance !== "undefined" ? performance.now() : Date.now();
+    const last = lastUpdateRef.current ?? now;
+    const dt = Math.min((now - last) / 1000, 0.05);
+    lastUpdateRef.current = now;
+
+    if (dt > 0) {
+      setPose((prev) => {
+        const nextPsi = prev.psi + telemetry.yawRate * dt;
+        const nextPhi = telemetry.lateralAcceleration * -0.02;
+        const timeScale = dt > 0 ? dt / 0.016 : 1;
+        const nextX = prev.x + Math.sin(nextPsi) * telemetry.lateralAcceleration * 0.002 * timeScale;
+        const nextZ = prev.z + Math.cos(nextPsi) * telemetry.lateralAcceleration * 0.002 * timeScale;
+        return { x: nextX, z: nextZ, psi: nextPsi, phi: nextPhi };
+      });
+    }
+  }, [telemetry]);
+
+  const frontDistance = useMemo(() => frontWeightDistribution * VEHICLE_WHEELBASE, [frontWeightDistribution]);
+  const rearDistance = useMemo(() => VEHICLE_WHEELBASE - frontDistance, [frontDistance]);
+
+  const physicsState = useMemo<PhysicsState>(
+    () => ({
+      x: pose.x,
+      z: pose.z,
+      psi: pose.psi,
+      phi: pose.phi,
+      hRide: rideHeightMeters,
+      wheelbase: VEHICLE_WHEELBASE,
+      a: frontDistance,
+      b: rearDistance,
+      trackF: TRACK_FRONT,
+      trackR: TRACK_REAR,
+      wheelRadius: wheelRadiusMeters,
+      steer: telemetry.steeringAngle,
+      groundY: GROUND_Y
+    }),
+    [frontDistance, pose.phi, pose.psi, pose.x, pose.z, rearDistance, rideHeightMeters, telemetry.steeringAngle, wheelRadiusMeters]
+  );
 
   return (
     <div
@@ -261,50 +262,42 @@ export function SandboxCanvas({
     >
       <Canvas shadows dpr={dpr} gl={{ antialias: true }}>
         <color attach="background" args={[background]} />
-        <fog attach="fog" args={[background, 10, 60]} />
-        <PerspectiveCamera makeDefault position={[6, 4, 6]} fov={40} />
-        <ambientLight intensity={0.4} />
-        <directionalLight
-          position={[5, 8, 5]}
-          intensity={0.9}
-          castShadow
-          shadow-mapSize-width={1024}
-          shadow-mapSize-height={1024}
-        />
-        <spotLight position={[-8, 8, -6]} angle={0.7} intensity={0.4} penumbra={0.5} />
+        <fog attach="fog" args={[background, 18, 80]} />
+        <PerspectiveCamera makeDefault position={[7, 4.5, 7]} fov={40} />
 
-        <group>
-          {showTrack ? (
-            <TrackSurface camberDeg={camberDeg} crownDeg={crownDeg} />
-          ) : (
-            <mesh receiveShadow position={[0, GROUND_Y, 0]} rotation={groundRotation}>
-              <planeGeometry args={[40, 40]} />
-              <meshStandardMaterial color="#e2e8f0" />
-            </mesh>
-          )}
-          <Vehicle
-            telemetry={telemetry}
-            showTrack={showTrack}
-            rideHeightMeters={rideHeightMeters}
-            wheelRadiusMeters={wheelRadiusMeters}
-            modelOriginOffsetY={modelOriginOffsetY}
-            alignmentDebug={alignmentDebug}
-            groundRotation={groundRotation}
-            vehicleSpeedMps={vehicleSpeedMps}
-            frontWeightDistribution={frontWeightDistribution}
-          />
-        </group>
+        <ambientLight intensity={0.35} />
+        <directionalLight
+          position={[12, 14, 6]}
+          intensity={1.1}
+          castShadow
+          shadow-mapSize-width={2048}
+          shadow-mapSize-height={2048}
+          shadow-bias={-0.00025}
+        />
+
+        <Environment preset="sunset" />
+
+        <RoadSurface groundY={GROUND_Y} rotation={groundRotation} />
+        <RoadsideVegetation groundY={GROUND_Y} />
+
+        <VehicleRig
+          state={physicsState}
+          alignmentDebug={alignmentDebug}
+          showTrack={showTrack}
+          groundRotation={groundRotation}
+          vehicleSpeedMps={vehicleSpeedMps}
+        />
 
         <ContactShadows
-          position={[0, GROUND_Y + CONTACT_PATCH_OFFSET, 0]}
+          position={[0, GROUND_Y + CONTACT_SHADOW_OFFSET, 0]}
           rotation={groundRotation}
-          opacity={0.65}
-          scale={12}
-          blur={1.4}
+          opacity={0.75}
+          scale={16}
+          blur={1.5}
           far={20}
         />
-        <Environment preset="city" />
-        <OrbitControls enablePan={false} enableZoom={false} maxPolarAngle={Math.PI / 2.2} />
+
+        <OrbitControls enablePan={false} enableZoom={false} maxPolarAngle={Math.PI / 2.15} />
       </Canvas>
       {watermark}
     </div>
