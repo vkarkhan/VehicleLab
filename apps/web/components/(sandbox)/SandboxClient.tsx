@@ -3,9 +3,11 @@
 import dynamic from "next/dynamic";
 import { useEffect, useMemo, useRef, useState, useTransition } from "react";
 import { usePathname, useRouter } from "next/navigation";
+import { MathUtils } from "three";
 
 import { CanvasWatermark } from "@/components/CanvasWatermark";
 import { ControlPanel } from "@/components/ControlPanel";
+import { ControlsPanel } from "@/components/ControlsPanel";
 import { InfoTooltip } from "@/components/InfoTooltip";
 import { NoSteerTestCard } from "@/components/(sandbox)/NoSteerTestCard";
 import { ShareButton } from "@/components/ShareButton";
@@ -32,10 +34,13 @@ interface SandboxClientProps {
   isPro?: boolean;
 }
 
+function clampSlipDeg(value: number) {
+  return Math.max(-90, Math.min(90, value));
+}
+
 export function SandboxClient({ initialState, enable3D, isPro = false }: SandboxClientProps) {
   const [state, setState] = useState<SandboxState>(initialState);
   const { samples, telemetry } = useVehicleSimulation(state);
-  // Convert UI speed (km/h) to m/s for scene animation.
   const vehicleSpeedMps = useMemo(() => speedToMetersPerSecond(state.speed), [state.speed]);
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const router = useRouter();
@@ -78,10 +83,17 @@ export function SandboxClient({ initialState, enable3D, isPro = false }: Sandbox
     return { label: "Neutral", tone: "bg-emerald-100 text-emerald-700 dark:bg-emerald-500/20 dark:text-emerald-200" };
   }, [telemetry.understeerGradient]);
 
-  const slipAngles = useMemo(() => ({
-    front: roundTo((telemetry.frontSlipAngle * 180) / Math.PI, 2),
-    rear: roundTo((telemetry.rearSlipAngle * 180) / Math.PI, 2)
-  }), [telemetry.frontSlipAngle, telemetry.rearSlipAngle]);
+  const slipAngles = useMemo(() => {
+    const overall = clampSlipDeg(
+      MathUtils.radToDeg(
+        Math.atan2(telemetry.lateralVelocity, Math.max(Math.abs(telemetry.longitudinalSpeed), 0.01))
+      )
+    );
+    const front = clampSlipDeg(MathUtils.radToDeg(telemetry.frontSlipAngle));
+    const rear = clampSlipDeg(MathUtils.radToDeg(telemetry.rearSlipAngle));
+    return { overall, front, rear };
+  }, [telemetry.frontSlipAngle, telemetry.lateralVelocity, telemetry.longitudinalSpeed, telemetry.rearSlipAngle]);
+
   const stateSignature = useMemo(() => JSON.stringify(state), [state]);
   const lastResultSignatureRef = useRef<string | null>(null);
   const lateralUnitLabel = state.lateralUnit === "g" ? "g" : "m/s^2";
@@ -89,7 +101,7 @@ export function SandboxClient({ initialState, enable3D, isPro = false }: Sandbox
     state.lateralUnit === "g" ? telemetry.lateralAcceleration / GRAVITY : telemetry.lateralAcceleration,
     2
   );
-  const lateralTooltip = "g = gravitational acceleration (1 g approx 9.80665 m/s^2). Values shown are multiples of g.";
+  const lateralTooltip = "Value = a/g. 1 g = 9.81 m/s^2";
   const lateralFormatter = state.lateralUnit === "g" ? (value: number) => value / GRAVITY : undefined;
 
   useEffect(() => {
@@ -103,6 +115,13 @@ export function SandboxClient({ initialState, enable3D, isPro = false }: Sandbox
 
   const handleStateChange = (partial: Partial<SandboxState>) => {
     setState((prev) => ({ ...prev, ...partial }));
+  };
+
+  const handleDisplayToggle = <K extends "showTrack" | "alignmentDebug" | "showForceArrows" | "showSkidMarks" | "showZeroSteerBaseline">(
+    key: K,
+    value: SandboxState[K]
+  ) => {
+    handleStateChange({ [key]: value } as Partial<SandboxState>);
   };
 
   const handleRunNoSteerTest = () => {
@@ -121,11 +140,18 @@ export function SandboxClient({ initialState, enable3D, isPro = false }: Sandbox
 
   const handleExportCsv = () => {
     if (!samples.length) return;
-    const header = ["time_s", "lateral_accel_mps2", "lateral_accel_g", "yaw_rate_rad_s", "front_slip_deg", "rear_slip_deg"];
+    const header = [
+      "time_s",
+      "lateral_accel_mps2",
+      "lateral_accel_g",
+      "yaw_rate_rad_s",
+      "front_slip_deg",
+      "rear_slip_deg"
+    ];
     const rows = samples.map((sample) => {
       const lateralG = sample.lateralAcceleration / GRAVITY;
-      const frontSlip = (sample.frontSlipAngle * 180) / Math.PI;
-      const rearSlip = (sample.rearSlipAngle * 180) / Math.PI;
+      const frontSlip = MathUtils.radToDeg(sample.frontSlipAngle);
+      const rearSlip = MathUtils.radToDeg(sample.rearSlipAngle);
       return [
         sample.time.toFixed(3),
         sample.lateralAcceleration.toFixed(3),
@@ -159,9 +185,12 @@ export function SandboxClient({ initialState, enable3D, isPro = false }: Sandbox
     document.body.removeChild(link);
   };
 
+  const loadTooltip = `Front utilisation ${(telemetry.frontUtilization * 100).toFixed(0)}%\nRear utilisation ${(telemetry.rearUtilization * 100).toFixed(0)}%`;
+  const slipTooltip = "Slip angle = atan2(vy, |vx|). Positive = left.";
+
   return (
     <div className="space-y-12" aria-busy={isPending}>
-      <div className="grid gap-8 lg:grid-cols-[minmax(0,360px)_1fr]">
+      <div className="grid gap-8 xl:grid-cols-[minmax(0,360px)_1fr]">
         <div>
           <ControlPanel state={state} onChange={handleStateChange} />
           <div className="mt-6 flex flex-wrap items-center gap-3">
@@ -172,78 +201,101 @@ export function SandboxClient({ initialState, enable3D, isPro = false }: Sandbox
           </div>
         </div>
         <div className="space-y-6">
-          <div>
-            {enable3D ? (
-              <SandboxCanvas
-                telemetry={telemetry}
-                showTrack={state.showTrack}
-                watermark={<CanvasWatermark visible={!isPro} />}
-                canvasRef={canvasRef}
-                wheelRadiusMeters={state.wheelRadiusMeters}
-                rideHeightMeters={state.rideHeightMeters}
-                alignmentDebug={state.alignmentDebug}
-                camberDeg={state.visualCamberDeg}
-                crownDeg={state.visualCrownDeg}
-                vehicleSpeedMps={vehicleSpeedMps}
-                frontWeightDistribution={state.weightDistributionFront}
-              />
-            ) : (
-              <div className="flex h-[420px] items-center justify-center rounded-3xl border border-dashed border-slate-300 bg-white text-center text-sm text-slate-500 dark:border-slate-700 dark:bg-slate-900">
-                3D sandbox is disabled in profile configuration.
-              </div>
-            )}
-            <div className="mt-4 grid gap-3 rounded-3xl border border-slate-200 bg-white/70 p-5 text-sm text-slate-600 shadow-sm dark:border-slate-800 dark:bg-slate-900/60 dark:text-slate-300 sm:grid-cols-3">
-              <div>
-                <p className="text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">Yaw rate</p>
-                <p className="text-lg font-semibold text-slate-900 dark:text-white">{roundTo(telemetry.yawRate, 2)} rad/s</p>
-              </div>
-              <div>
-                <div className="flex items-center justify-between gap-2">
-                  <p className="text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">Lateral accel</p>
-                  {state.lateralUnit === "g" ? (
-                    <InfoTooltip content={lateralTooltip} label="About lateral acceleration units" />
-                  ) : null}
+          <div className="flex flex-col gap-5 xl:flex-row xl:items-start">
+            <div className="flex-1 space-y-4">
+              {enable3D ? (
+                <SandboxCanvas
+                  telemetry={telemetry}
+                  showTrack={state.showTrack}
+                  watermark={<CanvasWatermark visible={!isPro} />}
+                  canvasRef={canvasRef}
+                  wheelRadiusMeters={state.wheelRadiusMeters}
+                  rideHeightMeters={state.rideHeightMeters}
+                  alignmentDebug={state.alignmentDebug}
+                  camberDeg={state.visualCamberDeg}
+                  crownDeg={state.visualCrownDeg}
+                  vehicleSpeedMps={vehicleSpeedMps}
+                  frontWeightDistribution={state.weightDistributionFront}
+                  cameraMode={state.cameraMode}
+                  showForceArrows={state.showForceArrows}
+                  showSkidMarks={state.showSkidMarks}
+                  showZeroSteerBaseline={state.showZeroSteerBaseline}
+                />
+              ) : (
+                <div className="flex h-[420px] items-center justify-center rounded-3xl border border-dashed border-slate-300 bg-white text-center text-sm text-slate-500 dark:border-slate-700 dark:bg-slate-900">
+                  3D sandbox is disabled in profile configuration.
                 </div>
-                <div className="mt-1 flex items-center justify-between gap-3">
-                  <p className="text-lg font-semibold text-slate-900 dark:text-white">
-                    {lateralValue} {lateralUnitLabel}
-                  </p>
-                  <div
-                    role="group"
-                    aria-label="Lateral acceleration units"
-                    className="flex items-center gap-1 rounded-full bg-slate-200/70 p-1 text-xs font-semibold text-slate-600 dark:bg-slate-800/60 dark:text-slate-300"
-                  >
-                    <button
-                      type="button"
-                      onClick={() => {
-                        if (state.lateralUnit !== "g") handleStateChange({ lateralUnit: "g" });
-                      }}
-                      data-active={state.lateralUnit === "g"}
-                      aria-pressed={state.lateralUnit === "g"}
-                      className="rounded-full px-2.5 py-1 transition hover:text-slate-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 data-[active=true]:bg-white data-[active=true]:text-slate-900 data-[active=true]:shadow-sm dark:data-[active=true]:bg-slate-900 dark:data-[active=true]:text-white"
+              )}
+              <div className="grid gap-3 rounded-3xl border border-slate-200 bg-white/70 p-5 text-sm text-slate-600 shadow-sm dark:border-slate-800 dark:bg-slate-900/60 dark:text-slate-300 sm:grid-cols-3">
+                <div>
+                  <p className="text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">Yaw rate</p>
+                  <p className="text-lg font-semibold text-slate-900 dark:text-white">{roundTo(telemetry.yawRate, 2)} rad/s</p>
+                </div>
+                <div>
+                  <div className="flex items-center justify-between gap-2">
+                    <p className="text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">Lateral accel</p>
+                    <InfoTooltip content={lateralTooltip} label="Lateral acceleration units" />
+                  </div>
+                  <div className="mt-1 flex items-center justify-between gap-3">
+                    <p className="text-lg font-semibold text-slate-900 dark:text-white">
+                      {lateralValue} {lateralUnitLabel}
+                    </p>
+                    <div
+                      role="group"
+                      aria-label="Lateral acceleration units"
+                      className="flex items-center gap-1 rounded-full bg-slate-200/70 p-1 text-xs font-semibold text-slate-600 dark:bg-slate-800/60 dark:text-slate-300"
                     >
-                      g
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        if (state.lateralUnit !== "mps2") handleStateChange({ lateralUnit: "mps2" });
-                      }}
-                      data-active={state.lateralUnit === "mps2"}
-                      aria-pressed={state.lateralUnit === "mps2"}
-                      className="rounded-full px-2.5 py-1 transition hover:text-slate-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 data-[active=true]:bg-white data-[active=true]:text-slate-900 data-[active=true]:shadow-sm dark:data-[active=true]:bg-slate-900 dark:data-[active=true]:text-white"
-                    >
-                      m/s^2
-                    </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          if (state.lateralUnit !== "g") handleStateChange({ lateralUnit: "g" });
+                        }}
+                        data-active={state.lateralUnit === "g"}
+                        aria-pressed={state.lateralUnit === "g"}
+                        className="rounded-full px-2.5 py-1 transition hover:text-slate-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 data-[active=true]:bg-white data-[active=true]:text-slate-900 data-[active=true]:shadow-sm dark:data-[active=true]:bg-slate-900 dark:data-[active=true]:text-white"
+                      >
+                        g
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          if (state.lateralUnit !== "mps2") handleStateChange({ lateralUnit: "mps2" });
+                        }}
+                        data-active={state.lateralUnit === "mps2"}
+                        aria-pressed={state.lateralUnit === "mps2"}
+                        className="rounded-full px-2.5 py-1 transition hover:text-slate-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 data-[active=true]:bg-white data-[active=true]:text-slate-900 data-[active=true]:shadow-sm dark:data-[active=true]:bg-slate-900 dark:data-[active=true]:text-white"
+                      >
+                        m/s^2
+                      </button>
+                    </div>
                   </div>
                 </div>
+                <div>
+                  <p className="text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">Balance</p>
+                  <span className={`inline-flex items-center rounded-full px-3 py-1 text-sm font-semibold ${balance.tone}`}>
+                    {balance.label}
+                  </span>
+                  <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">Gradient: {roundTo(telemetry.understeerGradient, 3)} deg/g</p>
+                </div>
               </div>
-              <div>
-                <p className="text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">Balance</p>
-                <span className={`inline-flex items-center rounded-full px-3 py-1 text-sm font-semibold ${balance.tone}`}>
-                  {balance.label}
-                </span>
-              </div>
+            </div>
+            <div className="xl:w-[320px] xl:flex-shrink-0">
+              <ControlsPanel
+                manoeuvre={state.manoeuvre}
+                skidpadRadius={state.skidpadRadius}
+                duration={state.duration}
+                cameraMode={state.cameraMode}
+                showTrack={state.showTrack}
+                alignmentDebug={state.alignmentDebug}
+                showForceArrows={state.showForceArrows}
+                showSkidMarks={state.showSkidMarks}
+                showZeroSteerBaseline={state.showZeroSteerBaseline}
+                onScenarioChange={(value) => handleStateChange({ manoeuvre: value })}
+                onSkidpadRadiusChange={(value) => handleStateChange({ skidpadRadius: value })}
+                onDurationChange={(value) => handleStateChange({ duration: value })}
+                onCameraModeChange={(mode) => handleStateChange({ cameraMode: mode })}
+                onDisplayToggle={handleDisplayToggle}
+              />
             </div>
           </div>
 
@@ -269,11 +321,13 @@ export function SandboxClient({ initialState, enable3D, isPro = false }: Sandbox
 
           <div className="grid gap-4 rounded-3xl border border-slate-200 bg-white/70 p-5 shadow-sm dark:border-slate-800 dark:bg-slate-900/60">
             <div className="flex flex-wrap items-center justify-between gap-3">
-              <h3 className="text-sm font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">Slip angles</h3>
-              <div className="flex items-center gap-2 text-xs text-slate-500 dark:text-slate-400">
-                <span className="inline-flex h-6 w-6 items-center justify-center rounded-full bg-slate-900 text-white">F</span>
-                <span className="inline-flex h-6 w-6 items-center justify-center rounded-full bg-slate-200 text-slate-800 dark:bg-slate-700 dark:text-slate-200">R</span>
+              <div className="flex items-center gap-2">
+                <h3 className="text-sm font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">Slip angles</h3>
+                <InfoTooltip content={slipTooltip} label="Slip angle info" />
               </div>
+              <span className="rounded-full bg-slate-200/70 px-3 py-1 text-xs font-semibold text-slate-600 dark:bg-slate-800/60 dark:text-slate-300">
+                {slipAngles.overall}{DEGREE_SYMBOL}
+              </span>
             </div>
             <div className="grid gap-3 sm:grid-cols-2">
               <div className="rounded-2xl border border-slate-200 bg-white/80 p-4 text-center shadow-inner dark:border-slate-800 dark:bg-slate-900/60">
@@ -287,18 +341,21 @@ export function SandboxClient({ initialState, enable3D, isPro = false }: Sandbox
             </div>
             <div className="grid gap-3 sm:grid-cols-2">
               <div>
-                <p className="text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">Front load</p>
-                <div className="mt-1 h-2 overflow-hidden rounded-full bg-slate-200 dark:bg-slate-800">
-                  <div className="h-full rounded-full bg-brand-500 transition-all" style={{ width: `${telemetry.frontLoadPercent}%` }} />
+                <div className="flex items-center justify-between">
+                  <p className="text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">Front load</p>
+                  <InfoTooltip content={loadTooltip} label="Axle utilisation" />
                 </div>
-                <p className="mt-1 text-sm text-slate-600 dark:text-slate-300">{telemetry.frontLoadPercent}%</p>
+                <div className="mt-1 h-2 overflow-hidden rounded-full bg-slate-200 dark:bg-slate-800">
+                  <div className="h-full rounded-full bg-brand-500 transition-all" style={{ width: `${roundTo(telemetry.frontLoadPercent, 1)}%` }} />
+                </div>
+                <p className="mt-1 text-sm text-slate-600 dark:text-slate-300">{roundTo(telemetry.frontLoadPercent, 1)}%</p>
               </div>
               <div>
                 <p className="text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">Rear load</p>
                 <div className="mt-1 h-2 overflow-hidden rounded-full bg-slate-200 dark:bg-slate-800">
-                  <div className="h-full rounded-full bg-slate-900 transition-all dark:bg-slate-100" style={{ width: `${telemetry.rearLoadPercent}%` }} />
+                  <div className="h-full rounded-full bg-slate-900 transition-all dark:bg-slate-100" style={{ width: `${roundTo(telemetry.rearLoadPercent, 1)}%` }} />
                 </div>
-                <p className="mt-1 text-sm text-slate-600 dark:text-slate-300">{telemetry.rearLoadPercent}%</p>
+                <p className="mt-1 text-sm text-slate-600 dark:text-slate-300">{roundTo(telemetry.rearLoadPercent, 1)}%</p>
               </div>
             </div>
           </div>
@@ -332,3 +389,11 @@ export function SandboxClient({ initialState, enable3D, isPro = false }: Sandbox
     </div>
   );
 }
+
+
+
+
+
+
+
+
