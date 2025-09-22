@@ -5,7 +5,6 @@ import { useId } from "react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Slider } from "@/components/ui/slider";
-import { Switch } from "@/components/ui/switch";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import type { SandboxState } from "@/lib/stateSchema";
 import { roundTo } from "@/lib/utils";
@@ -138,6 +137,93 @@ export function ControlPanel({ state, onChange }: ControlPanelProps) {
       </div>
 
       <div className="space-y-4">
+        <h3 className="text-sm font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">Chassis geometry</h3>
+        <div className="grid gap-4">
+          <div>
+            <Label htmlFor={`${baseId}-wheel-radius`}>Wheel radius (m)</Label>
+            <div className="mt-2 flex items-center gap-3">
+              <Slider
+                value={[state.wheelRadiusMeters]}
+                min={0.25}
+                max={0.45}
+                step={0.005}
+                onValueChange={([value]) => control("wheelRadiusMeters", roundTo(value, 3))}
+                aria-label="Wheel radius in metres"
+              />
+              <Input
+                id={`${baseId}-wheel-radius`}
+                type="number"
+                inputMode="decimal"
+                min={0.25}
+                max={0.45}
+                step="0.001"
+                value={state.wheelRadiusMeters.toFixed(3)}
+                onChange={(event) => control("wheelRadiusMeters", Number(event.target.value))}
+                className="w-24"
+              />
+            </div>
+          </div>
+          <div>
+            <Label htmlFor={`${baseId}-ride-height`}>Ride height (m)</Label>
+            <div className="mt-2 flex items-center gap-3">
+              <Slider
+                value={[state.rideHeightMeters]}
+                min={0}
+                max={0.4}
+                step={0.005}
+                onValueChange={([value]) => control("rideHeightMeters", roundTo(value, 3))}
+                aria-label="Ride height in metres"
+              />
+              <Input
+                id={`${baseId}-ride-height`}
+                type="number"
+                inputMode="decimal"
+                min={0}
+                max={0.4}
+                step="0.001"
+                value={state.rideHeightMeters.toFixed(3)}
+                onChange={(event) => control("rideHeightMeters", Number(event.target.value))}
+                className="w-24"
+              />
+            </div>
+          </div>
+        </div>
+        <div className="grid gap-4 sm:grid-cols-2">
+          <div>
+            <Label htmlFor={`${baseId}-visual-camber`}>Camber (deg)</Label>
+            <div className="mt-2 flex items-center gap-3">
+              <Slider
+                value={[state.visualCamberDeg]}
+                min={-5}
+                max={5}
+                step={0.1}
+                onValueChange={([value]) => control("visualCamberDeg", roundTo(value, 1))}
+                aria-label="Visual camber angle"
+              />
+              <div className="w-16 text-right text-sm font-semibold text-slate-700 dark:text-slate-200">
+                {`${roundTo(state.visualCamberDeg, 1)}\u00B0`}
+              </div>
+            </div>
+          </div>
+          <div>
+            <Label htmlFor={`${baseId}-visual-crown`}>Crown (deg)</Label>
+            <div className="mt-2 flex items-center gap-3">
+              <Slider
+                value={[state.visualCrownDeg]}
+                min={-3}
+                max={3}
+                step={0.1}
+                onValueChange={([value]) => control("visualCrownDeg", roundTo(value, 1))}
+                aria-label="Visual crown angle"
+              />
+              <div className="w-16 text-right text-sm font-semibold text-slate-700 dark:text-slate-200">
+                {`${roundTo(state.visualCrownDeg, 1)}\u00B0`}
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div className="space-y-4">
         <div className="flex items-center justify-between">
           <div>
             <h3 className="text-sm font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">Steering input</h3>
@@ -225,174 +311,6 @@ export function ControlPanel({ state, onChange }: ControlPanelProps) {
         </Tabs>
       </div>
 
-      <div className="space-y-4">
-        <h3 className="text-sm font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">Scenario</h3>
-        <Tabs value={state.manoeuvre} onValueChange={(value) => control("manoeuvre", value as SandboxState["manoeuvre"])}>
-          <TabsList>
-            <TabsTrigger value="skidpad">Skidpad</TabsTrigger>
-            <TabsTrigger value="lane-change">Lane change</TabsTrigger>
-          </TabsList>
-          <TabsContent value="skidpad" className="border-none bg-transparent p-0">
-            <Label htmlFor={`${baseId}-radius`}>Skidpad radius (m)</Label>
-            <div className="mt-2 flex items-center gap-3">
-              <Slider
-                value={[state.skidpadRadius]}
-                min={10}
-                max={60}
-                step={1}
-                onValueChange={([value]) => control("skidpadRadius", value)}
-              />
-              <Input
-                id={`${baseId}-radius`}
-                type="number"
-                min={10}
-                max={60}
-                value={Math.round(state.skidpadRadius)}
-                onChange={(event) => control("skidpadRadius", Number(event.target.value))}
-                className="w-24"
-              />
-            </div>
-          </TabsContent>
-          <TabsContent value="lane-change" className="border-none bg-transparent p-0">
-            <p className="rounded-2xl border border-dashed border-slate-300 p-4 text-sm text-slate-600 dark:border-slate-700 dark:text-slate-300">
-              A prebaked double-lane-change steering trace is used to stress the chassis.
-            </p>
-          </TabsContent>
-        </Tabs>
-        <div>
-          <Label htmlFor={`${baseId}-duration`}>Simulation window (s)</Label>
-          <div className="mt-2 flex items-center gap-3">
-            <Slider
-              value={[state.duration]}
-              min={4}
-              max={20}
-              step={1}
-              onValueChange={([value]) => control("duration", value)}
-            />
-            <Input
-              id={`${baseId}-duration`}
-              type="number"
-              min={4}
-              max={20}
-              value={Math.round(state.duration)}
-              onChange={(event) => control("duration", Number(event.target.value))}
-              className="w-24"
-            />
-          </div>
-        </div>
-      </div>
-
-      <div className="space-y-4">
-        <h3 className="text-sm font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">Display</h3>
-        <div className="flex items-center justify-between rounded-2xl border border-slate-200 bg-white/60 p-4 shadow-inner dark:border-slate-800 dark:bg-slate-900/40">
-          <div>
-            <p className="text-sm font-medium text-slate-900 dark:text-white">Show track & contact patches</p>
-            <p className="text-xs text-slate-500 dark:text-slate-400">Toggle the asphalt plane and wheel footprints in the 3D sandbox.</p>
-          </div>
-          <Switch
-            checked={state.showTrack}
-            onCheckedChange={(value) => control("showTrack", value)}
-            aria-label="Toggle track and contact patches"
-          />
-        </div>
-        <div className="space-y-4 rounded-2xl border border-slate-200 bg-white/60 p-5 shadow-inner dark:border-slate-800 dark:bg-slate-900/40">
-          <div className="flex items-start justify-between gap-3">
-            <div>
-              <p className="text-sm font-medium text-slate-900 dark:text-white">Alignment debug</p>
-              <p className="text-xs text-slate-500 dark:text-slate-400">Reveal wheel centres and the ground reference to verify placement.</p>
-            </div>
-            <Switch
-              checked={state.alignmentDebug}
-              onCheckedChange={(value) => control("alignmentDebug", value)}
-              aria-label="Toggle alignment debug helpers"
-            />
-          </div>
-          <div className="grid gap-4">
-            <div>
-              <Label htmlFor={`${baseId}-wheel-radius`}>Wheel radius (m)</Label>
-              <div className="mt-2 flex items-center gap-3">
-                <Slider
-                  value={[state.wheelRadiusMeters]}
-                  min={0.25}
-                  max={0.45}
-                  step={0.005}
-                  onValueChange={([value]) => control("wheelRadiusMeters", roundTo(value, 3))}
-                  aria-label="Wheel radius in metres"
-                />
-                <Input
-                  id={`${baseId}-wheel-radius`}
-                  type="number"
-                  inputMode="decimal"
-                  min={0.25}
-                  max={0.45}
-                  step="0.001"
-                  value={state.wheelRadiusMeters.toFixed(3)}
-                  onChange={(event) => control("wheelRadiusMeters", Number(event.target.value))}
-                  className="w-24"
-                />
-              </div>
-            </div>
-            <div>
-              <Label htmlFor={`${baseId}-ride-height`}>Ride height (m)</Label>
-              <div className="mt-2 flex items-center gap-3">
-                <Slider
-                  value={[state.rideHeightMeters]}
-                  min={0}
-                  max={0.4}
-                  step={0.005}
-                  onValueChange={([value]) => control("rideHeightMeters", roundTo(value, 3))}
-                  aria-label="Ride height in metres"
-                />
-                <Input
-                  id={`${baseId}-ride-height`}
-                  type="number"
-                  inputMode="decimal"
-                  min={0}
-                  max={0.4}
-                  step="0.001"
-                  value={state.rideHeightMeters.toFixed(3)}
-                  onChange={(event) => control("rideHeightMeters", Number(event.target.value))}
-                  className="w-24"
-                />
-              </div>
-            </div>
-          </div>
-          <div className="grid gap-4 sm:grid-cols-2">
-            <div>
-              <Label htmlFor={`${baseId}-visual-camber`}>Camber (deg)</Label>
-              <div className="mt-2 flex items-center gap-3">
-                <Slider
-                  value={[state.visualCamberDeg]}
-                  min={-5}
-                  max={5}
-                  step={0.1}
-                  onValueChange={([value]) => control("visualCamberDeg", roundTo(value, 1))}
-                  aria-label="Visual camber angle"
-                />
-                <div className="w-16 text-right text-sm font-semibold text-slate-700 dark:text-slate-200">
-                  {roundTo(state.visualCamberDeg, 1)}°
-                </div>
-              </div>
-            </div>
-            <div>
-              <Label htmlFor={`${baseId}-visual-crown`}>Crown (deg)</Label>
-              <div className="mt-2 flex items-center gap-3">
-                <Slider
-                  value={[state.visualCrownDeg]}
-                  min={-3}
-                  max={3}
-                  step={0.1}
-                  onValueChange={([value]) => control("visualCrownDeg", roundTo(value, 1))}
-                  aria-label="Visual crown angle"
-                />
-                <div className="w-16 text-right text-sm font-semibold text-slate-700 dark:text-slate-200">
-                  {roundTo(state.visualCrownDeg, 1)}°
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
 
       <div className="space-y-3">
         <div className="flex items-center justify-between">

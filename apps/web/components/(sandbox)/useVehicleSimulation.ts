@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useEffect, useMemo, useState } from "react";
 
@@ -18,6 +18,10 @@ interface VehicleSimulationResult {
   telemetry: VehicleTelemetry;
 }
 
+const TARGET_DT = 1 / 60;
+const CHART_UPDATE_INTERVAL = 1 / 20;
+const SMOOTHING_WINDOW = 8;
+
 const initialTelemetry: VehicleTelemetry = {
   yawRate: 0,
   lateralAcceleration: 0,
@@ -28,6 +32,12 @@ const initialTelemetry: VehicleTelemetry = {
   rearLoad: 0,
   frontLoadPercent: 50,
   rearLoadPercent: 50,
+  frontAxleForce: 0,
+  rearAxleForce: 0,
+  frontUtilization: 0,
+  rearUtilization: 0,
+  lateralVelocity: 0,
+  longitudinalSpeed: 0,
   understeerGradient: 0,
   steeringAngle: 0
 };
@@ -39,45 +49,75 @@ export function useVehicleSimulation(state: SandboxState): VehicleSimulationResu
 
   useEffect(() => {
     const vehicleState = createVehicleState();
-    let localTelemetry = initialTelemetry;
-    let elapsed = 0;
-    let lastSampleTime = 0;
-    let animationFrame: number;
-    let lastUpdate = performance.now();
+    let latestTelemetry = initialTelemetry;
 
-    const maxSamples = Math.round(state.duration * 20);
+    let accumulator = 0;
+    let elapsed = 0;
+    let lastFrame = performance.now();
+    let lastChartEmit = 0;
+    let animationFrame: number;
+
+    const smoothing = {
+      lateralAcceleration: [] as number[],
+      yawRate: [] as number[]
+    };
+
+    const maxSamples = Math.max(Math.round(state.duration * 20), 40);
 
     const run = (time: number) => {
-      const dt = Math.min((time - lastUpdate) / 1000, 0.05);
-      lastUpdate = time;
-      elapsed += dt;
+      const frameDt = Math.min((time - lastFrame) / 1000, 0.1);
+      lastFrame = time;
+      accumulator += frameDt;
 
-      const steeringAngle = steeringForState(state, elapsed);
       const inputs = {
-        steeringAngle,
-        speed: speedToMetersPerSecond(state.speed)
+        speed: speedToMetersPerSecond(state.speed),
+        steeringAngle: 0
       };
 
-      const result = stepBicycleModel(vehicleState, inputs, params, dt);
-      vehicleState.yawRate = result.state.yawRate;
-      vehicleState.lateralVelocity = result.state.lateralVelocity;
-      localTelemetry = result.telemetry;
+      while (accumulator >= TARGET_DT) {
+        elapsed += TARGET_DT;
+        accumulator -= TARGET_DT;
 
-      if (elapsed - lastSampleTime >= 0.05) {
-        lastSampleTime = elapsed;
-        setSamples((prev) => {
-          const next: SimulationSample[] = [
-            ...prev.slice(-maxSamples + 1),
-            {
-              ...result.sample,
-              time: elapsed
-            }
-          ];
-          return next;
-        });
+        inputs.steeringAngle = steeringForState(state, elapsed);
+
+        const result = stepBicycleModel(vehicleState, inputs, params, TARGET_DT);
+        vehicleState.yawRate = result.state.yawRate;
+        vehicleState.lateralVelocity = result.state.lateralVelocity;
+        latestTelemetry = result.telemetry;
+
+        smoothing.lateralAcceleration.push(result.telemetry.lateralAcceleration);
+        if (smoothing.lateralAcceleration.length > SMOOTHING_WINDOW) {
+          smoothing.lateralAcceleration.shift();
+        }
+
+        smoothing.yawRate.push(result.telemetry.yawRate);
+        if (smoothing.yawRate.length > SMOOTHING_WINDOW) {
+          smoothing.yawRate.shift();
+        }
+
+        const smoothedLateral =
+          smoothing.lateralAcceleration.reduce((acc, value) => acc + value, 0) / smoothing.lateralAcceleration.length;
+        const smoothedYaw = smoothing.yawRate.reduce((acc, value) => acc + value, 0) / smoothing.yawRate.length;
+
+        if (elapsed - lastChartEmit >= CHART_UPDATE_INTERVAL) {
+          lastChartEmit = elapsed;
+          const sample: SimulationSample = {
+            time: elapsed,
+            yawRate: smoothedYaw,
+            lateralAcceleration: smoothedLateral,
+            slipAngle: result.sample.slipAngle,
+            frontSlipAngle: result.sample.frontSlipAngle,
+            rearSlipAngle: result.sample.rearSlipAngle
+          };
+
+          setSamples((prev) => {
+            const next = [...prev.slice(-maxSamples + 1), sample];
+            return next;
+          });
+        }
       }
 
-      setTelemetry((prev) => ({ ...prev, ...localTelemetry }));
+      setTelemetry((prev) => ({ ...prev, ...latestTelemetry }));
       animationFrame = requestAnimationFrame(run);
     };
 

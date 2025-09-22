@@ -1,4 +1,4 @@
-import type { SandboxState } from "@/lib/stateSchema";
+﻿import type { SandboxState } from "@/lib/stateSchema";
 import { clamp, roundTo } from "@/lib/utils";
 
 const G = 9.81;
@@ -42,6 +42,12 @@ export interface VehicleTelemetry {
   rearLoad: number;
   frontLoadPercent: number;
   rearLoadPercent: number;
+  frontAxleForce: number;
+  rearAxleForce: number;
+  frontUtilization: number;
+  rearUtilization: number;
+  lateralVelocity: number;
+  longitudinalSpeed: number;
   understeerGradient: number;
   steeringAngle: number;
 }
@@ -111,11 +117,14 @@ export function stepBicycleModel(
   const slip = Math.atan2(newLateralVelocity, speed);
 
   const weightTransfer = (mass * ay * cgHeight) / TRACK_WIDTH;
-  const frontLoad = clamp(FzfStatic + weightTransfer * (a / wheelbase), mass * G * 0.9, mass * G * 1.1);
-  const rearLoad = clamp(FzrStatic - weightTransfer * (a / wheelbase), mass * G * 0.1, mass * G * 0.9);
-  const frontLoadPercent = roundTo((frontLoad / (FzfStatic + FzrStatic)) * 100, 1);
-  const rearLoadPercent = roundTo((rearLoad / (FzfStatic + FzrStatic)) * 100, 1);
+  const frontLoad = clamp(FzfStatic + weightTransfer * (a / wheelbase), 0, mass * G);
+  const rearLoad = clamp(FzrStatic - weightTransfer * (a / wheelbase), 0, mass * G);
+  const totalLoad = frontLoad + rearLoad || mass * G;
+  const frontLoadPercent = roundTo((frontLoad / totalLoad) * 100, 1);
+  const rearLoadPercent = roundTo(100 - frontLoadPercent, 1);
 
+  const frontUtilization = Math.min(Math.abs(FyFront) / (tyreGrip * Math.max(frontLoad, 1)), 1);
+  const rearUtilization = Math.min(Math.abs(FyRear) / (tyreGrip * Math.max(rearLoad, 1)), 1);
   const understeerGradient = (mass * (b / Cr - a / Cf)) / (mass * G);
 
   const telemetry: VehicleTelemetry = {
@@ -128,6 +137,12 @@ export function stepBicycleModel(
     rearLoad,
     frontLoadPercent,
     rearLoadPercent,
+    frontAxleForce: FyFront,
+    rearAxleForce: FyRear,
+    frontUtilization,
+    rearUtilization,
+    lateralVelocity: newLateralVelocity,
+    longitudinalSpeed: speed,
     understeerGradient,
     steeringAngle: inputs.steeringAngle
   };
