@@ -21,7 +21,6 @@ export const sandboxStateSchema = z.object({
   antiRoll: z.coerce.number().min(0).max(1).default(0.5),
   wheelRadiusMeters: z.coerce.number().min(0.25).max(0.45).default(0.34),
   rideHeightMeters: z.coerce.number().min(0).max(0.4).default(0.14),
-  modelOriginOffsetY: z.coerce.number().min(-0.3).max(0.3).default(-0.08),
   visualCamberDeg: z.coerce.number().min(-5).max(5).default(0),
   visualCrownDeg: z.coerce.number().min(-3).max(3).default(0)
 });

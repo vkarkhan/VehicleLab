@@ -181,7 +181,6 @@ export function SandboxClient({ initialState, enable3D, isPro = false }: Sandbox
                 containerRef={canvasContainerRef}
                 wheelRadiusMeters={state.wheelRadiusMeters}
                 rideHeightMeters={state.rideHeightMeters}
-                modelOriginOffsetY={state.modelOriginOffsetY}
                 alignmentDebug={state.alignmentDebug}
                 camberDeg={state.visualCamberDeg}
                 crownDeg={state.visualCrownDeg}
