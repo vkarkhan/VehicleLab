@@ -176,6 +176,12 @@ export function SandboxClient({ initialState, enable3D, isPro = false }: Sandbox
                 showTrack={state.showTrack}
                 watermark={<CanvasWatermark visible={!isPro} />}
                 containerRef={canvasContainerRef}
+                wheelRadiusMeters={state.wheelRadiusMeters}
+                rideHeightMeters={state.rideHeightMeters}
+                modelOriginOffsetY={state.modelOriginOffsetY}
+                alignmentDebug={state.alignmentDebug}
+                camberDeg={state.visualCamberDeg}
+                crownDeg={state.visualCrownDeg}
               />
             ) : (
               <div className="flex h-[420px] items-center justify-center rounded-3xl border border-dashed border-slate-300 bg-white text-center text-sm text-slate-500 dark:border-slate-700 dark:bg-slate-900">

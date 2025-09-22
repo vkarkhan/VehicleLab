@@ -2,9 +2,9 @@
 
 import { ContactShadows, Environment, OrbitControls, PerspectiveCamera } from "@react-three/drei";
 import { Canvas } from "@react-three/fiber";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import type { Ref } from "react";
-import { Color, Euler, Vector3 } from "three";
+import { Color, MathUtils, Vector3 } from "three";
 
 import type { VehicleTelemetry } from "@/lib/physics";
 
@@ -13,9 +13,22 @@ interface SandboxCanvasProps {
   watermark: React.ReactNode;
   containerRef?: Ref<HTMLDivElement>;
   showTrack: boolean;
+  wheelRadiusMeters: number;
+  rideHeightMeters: number;
+  modelOriginOffsetY: number;
+  alignmentDebug: boolean;
+  camberDeg: number;
+  crownDeg: number;
 }
 
 const background = new Color("#e2e8f0");
+
+const GROUND_Y = 0;
+const CONTACT_PATCH_OFFSET = 0.001;
+const CLEARANCE_THRESHOLD = -1e-3;
+const WHEEL_WIDTH = 0.32;
+const DEBUG_SPHERE_RADIUS = 0.045;
+const GUIDE_LINE_THICKNESS = 0.015;
 
 const wheelOffsets = [
   { x: -0.75, z: 1.35, axle: "front" as const },
@@ -35,62 +48,141 @@ function PrimitiveCar() {
         <boxGeometry args={[1.7, 0.5, 1.6]} />
         <meshStandardMaterial color="#1e293b" metalness={0.2} roughness={0.4} />
       </mesh>
-      {[-1, 1].map((x) =>
-        [-1.35, 1.35].map((z) => (
-          <mesh key={`${x}-${z}`} castShadow position={[x * 0.75, 0.2, z]} rotation={[0, 0, Math.PI / 2]}>
-            <cylinderGeometry args={[0.38, 0.38, 0.32, 24]} />
-            <meshStandardMaterial color="#0f172a" metalness={0.2} roughness={0.4} />
-          </mesh>
-        ))
-      )}
     </group>
   );
 }
 
-function Vehicle({ telemetry, showTrack }: { telemetry: VehicleTelemetry; showTrack: boolean }) {
-  const [rotation, setRotation] = useState(() => new Euler(0, 0, 0));
+interface VehicleProps {
+  telemetry: VehicleTelemetry;
+  showTrack: boolean;
+  wheelRadiusMeters: number;
+  rideHeightMeters: number;
+  modelOriginOffsetY: number;
+  alignmentDebug: boolean;
+  camberDeg: number;
+  crownDeg: number;
+}
+
+function Vehicle({
+  telemetry,
+  showTrack,
+  wheelRadiusMeters,
+  rideHeightMeters,
+  modelOriginOffsetY,
+  alignmentDebug,
+  camberDeg,
+  crownDeg
+}: VehicleProps) {
+  const [attitude, setAttitude] = useState(() => ({ yaw: 0, roll: 0 }));
   const [position, setPosition] = useState(() => new Vector3(0, 0, 0));
 
   useEffect(() => {
-    setRotation((prev) => {
-      const yaw = prev.y + telemetry.yawRate * 0.016;
-      const roll = telemetry.lateralAcceleration * -0.02;
+    setAttitude((prev) => {
+      const nextYaw = prev.yaw + telemetry.yawRate * 0.016;
+      const nextRoll = telemetry.lateralAcceleration * -0.02;
       setPosition((pos) => {
         const next = pos.clone();
-        next.x += Math.sin(yaw) * telemetry.lateralAcceleration * 0.002;
-        next.z += Math.cos(yaw) * telemetry.lateralAcceleration * 0.002;
+        next.x += Math.sin(nextYaw) * telemetry.lateralAcceleration * 0.002;
+        next.z += Math.cos(nextYaw) * telemetry.lateralAcceleration * 0.002;
         return next;
       });
-      return new Euler(roll, yaw, 0);
+      return { yaw: nextYaw, roll: nextRoll };
     });
   }, [telemetry]);
 
+  const camberRadians = MathUtils.degToRad(camberDeg);
+  const crownRadians = MathUtils.degToRad(crownDeg);
+  const wheelCenterY = GROUND_Y + wheelRadiusMeters;
+  const contactPatchY = GROUND_Y + CONTACT_PATCH_OFFSET;
+  const chassisOriginY = GROUND_Y + wheelRadiusMeters + rideHeightMeters + modelOriginOffsetY;
+
+  const wheelGroups = useMemo(
+    () =>
+      wheelOffsets.map(({ x, z, axle }) => {
+        const center = [x, wheelCenterY, z] as const;
+        const contactPatch = [x, contactPatchY, z] as const;
+        const clearance = center[1] - (GROUND_Y + wheelRadiusMeters);
+        const debugColor = clearance < CLEARANCE_THRESHOLD ? "#ef4444" : "#22c55e";
+
+        return {
+          axle,
+          center,
+          contactPatch,
+          clearance,
+          debugColor
+        };
+      }),
+    [wheelCenterY, contactPatchY, wheelRadiusMeters]
+  );
+
   return (
-    <group position={position} rotation={rotation}>
-      <PrimitiveCar />
-      {showTrack &&
-        wheelOffsets.map(({ x, z, axle }) => (
-          <mesh key={`${axle}-${x}-${z}`} position={[x, 0.02, z]} rotation={[-Math.PI / 2, 0, 0]}>
-            <planeGeometry args={[0.62, 0.36]} />
-            <meshStandardMaterial
-              color={axle === "front" ? "#38bdf8" : "#f97316"}
-              opacity={0.45}
-              transparent
-              roughness={0.4}
-              metalness={0.1}
-            />
+    <group position={position} rotation={[0, attitude.yaw, 0]}>
+      <group position={[0, chassisOriginY, 0]} rotation={[attitude.roll, 0, 0]}>
+        <PrimitiveCar />
+      </group>
+
+      {wheelGroups.map(({ axle, center, contactPatch, debugColor, clearance }) => (
+        <group key={`${axle}-${center[0]}-${center[2]}`}>
+          <mesh castShadow position={center} rotation={[0, 0, Math.PI / 2]}>
+            <cylinderGeometry args={[wheelRadiusMeters, wheelRadiusMeters, WHEEL_WIDTH, 24]} />
+            <meshStandardMaterial color="#0f172a" metalness={0.2} roughness={0.4} />
           </mesh>
-        ))}
+
+          {showTrack ? (
+            <mesh position={contactPatch} rotation={[-Math.PI / 2 + camberRadians, 0, crownRadians]}>
+              <planeGeometry args={[0.62, 0.36]} />
+              <meshStandardMaterial
+                color={axle === "front" ? "#38bdf8" : "#f97316"}
+                opacity={0.45}
+                transparent
+                roughness={0.4}
+                metalness={0.1}
+              />
+            </mesh>
+          ) : null}
+
+          {alignmentDebug ? (
+            <group>
+              <mesh position={center}>
+                <sphereGeometry args={[DEBUG_SPHERE_RADIUS, 16, 16]} />
+                <meshStandardMaterial color={debugColor} />
+              </mesh>
+              <mesh position={[center[0], GROUND_Y + CONTACT_PATCH_OFFSET * 0.5, center[2]]} rotation={[-Math.PI / 2, 0, 0]}>
+                <planeGeometry args={[0.2, GUIDE_LINE_THICKNESS]} />
+                <meshBasicMaterial
+                  color={debugColor}
+                  transparent
+                  opacity={Math.min(0.8, Math.abs(clearance) * 400 + 0.2)}
+                />
+              </mesh>
+            </group>
+          ) : null}
+        </group>
+      ))}
+
+      {alignmentDebug ? (
+        <mesh position={[0, GROUND_Y + CONTACT_PATCH_OFFSET * 0.5, 0]} rotation={[-Math.PI / 2, 0, 0]}>
+          <planeGeometry args={[14, GUIDE_LINE_THICKNESS]} />
+          <meshBasicMaterial color="#0ea5e9" transparent opacity={0.6} />
+        </mesh>
+      ) : null}
     </group>
   );
 }
 
-function TrackSurface() {
+interface TrackSurfaceProps {
+  camberDeg: number;
+  crownDeg: number;
+}
+
+function TrackSurface({ camberDeg, crownDeg }: TrackSurfaceProps) {
   const lanePositions = [-3.5, 0, 3.5];
   const edgePositions = [-7.5, 7.5];
+  const camberRadians = MathUtils.degToRad(camberDeg);
+  const crownRadians = MathUtils.degToRad(crownDeg) * 0.4;
 
   return (
-    <group rotation={[-Math.PI / 2, 0, 0]}>
+    <group position={[0, GROUND_Y, 0]} rotation={[-Math.PI / 2 + camberRadians, 0, crownRadians]}>
       <mesh receiveShadow>
         <planeGeometry args={[42, 54]} />
         <meshStandardMaterial color="#1f2937" roughness={0.95} metalness={0.05} />
@@ -111,8 +203,21 @@ function TrackSurface() {
   );
 }
 
-export function SandboxCanvas({ telemetry, watermark, containerRef, showTrack }: SandboxCanvasProps) {
+export function SandboxCanvas({
+  telemetry,
+  watermark,
+  containerRef,
+  showTrack,
+  wheelRadiusMeters,
+  rideHeightMeters,
+  modelOriginOffsetY,
+  alignmentDebug,
+  camberDeg,
+  crownDeg
+}: SandboxCanvasProps) {
   const [dpr, setDpr] = useState(1);
+  const camberRadians = useMemo(() => MathUtils.degToRad(camberDeg), [camberDeg]);
+  const crownTiltRadians = useMemo(() => MathUtils.degToRad(crownDeg) * 0.4, [crownDeg]);
 
   useEffect(() => {
     setDpr(Math.min(window.devicePixelRatio ?? 1, 1.5));
@@ -139,17 +244,36 @@ export function SandboxCanvas({ telemetry, watermark, containerRef, showTrack }:
 
         <group position={[0, 0, 0]}>
           {showTrack ? (
-            <TrackSurface />
+            <TrackSurface camberDeg={camberDeg} crownDeg={crownDeg} />
           ) : (
-            <mesh receiveShadow rotation={[-Math.PI / 2, 0, 0]}>
+            <mesh
+              receiveShadow
+              position={[0, GROUND_Y, 0]}
+              rotation={[-Math.PI / 2 + camberRadians, 0, crownTiltRadians]}
+            >
               <planeGeometry args={[40, 40]} />
               <meshStandardMaterial color="#e2e8f0" />
             </mesh>
           )}
-          <Vehicle telemetry={telemetry} showTrack={showTrack} />
+          <Vehicle
+            telemetry={telemetry}
+            showTrack={showTrack}
+            wheelRadiusMeters={wheelRadiusMeters}
+            rideHeightMeters={rideHeightMeters}
+            modelOriginOffsetY={modelOriginOffsetY}
+            alignmentDebug={alignmentDebug}
+            camberDeg={camberDeg}
+            crownDeg={crownDeg}
+          />
         </group>
 
-        <ContactShadows position={[0, 0.01, 0]} opacity={0.65} scale={12} blur={1.4} far={20} />
+        <ContactShadows
+          position={[0, GROUND_Y + CONTACT_PATCH_OFFSET, 0]}
+          opacity={0.65}
+          scale={12}
+          blur={1.4}
+          far={20}
+        />
         <Environment preset="city" />
         <OrbitControls enablePan={false} enableZoom={false} maxPolarAngle={Math.PI / 2.2} />
       </Canvas>
