@@ -37,7 +37,7 @@ export function SandboxClient({ initialState, enable3D, isPro = false }: Sandbox
   const { samples, telemetry } = useVehicleSimulation(state);
   // Convert UI speed (km/h) to m/s for scene animation.
   const vehicleSpeedMps = useMemo(() => speedToMetersPerSecond(state.speed), [state.speed]);
-  const canvasContainerRef = useRef<HTMLDivElement | null>(null);
+  const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const router = useRouter();
   const pathname = usePathname();
   const [isPending, startTransition] = useTransition();
@@ -148,7 +148,7 @@ export function SandboxClient({ initialState, enable3D, isPro = false }: Sandbox
   };
 
   const handleExportPng = () => {
-    const canvas = canvasContainerRef.current?.querySelector("canvas");
+    const canvas = canvasRef.current;
     if (!canvas) return;
     const dataUrl = canvas.toDataURL("image/png");
     const link = document.createElement("a");
@@ -178,7 +178,7 @@ export function SandboxClient({ initialState, enable3D, isPro = false }: Sandbox
                 telemetry={telemetry}
                 showTrack={state.showTrack}
                 watermark={<CanvasWatermark visible={!isPro} />}
-                containerRef={canvasContainerRef}
+                canvasRef={canvasRef}
                 wheelRadiusMeters={state.wheelRadiusMeters}
                 rideHeightMeters={state.rideHeightMeters}
                 alignmentDebug={state.alignmentDebug}
