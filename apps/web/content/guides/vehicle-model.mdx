@@ -1,0 +1,93 @@
+---
+title: "Vehicle model"
+description: "Kinematic bicycle + tire model"
+publishedAt: "2025-09-22"
+slug: vehicle-model
+published: true
+---
+
+## 1. Overview and assumptions
+
+VehicleLab's sandbox uses a lightweight kinematic bicycle model augmented with nonlinear tyre saturation.
+The chassis is treated as a single rigid body, tyres respond instantly to slip, and aerodynamic effects are
+neglected. Inputs are limited to steady-state steering and constant speed, which keeps the maths tractable
+and makes validation comparisons straightforward.
+
+## 2. Coordinate frames and sign conventions
+
+We reference a right-handed world frame with **X** forward, **Y** to the left, and **Z** up. Yaw angle is noted as
+$\psi$ with yaw rate $r = \dot{\psi}$. Lateral acceleration is $a_y$ and positive left. Steering input $\delta$ is
+positive when turning left. Unless otherwise stated, yaw rate is in rad/s, lateral acceleration in m/s^2, and
+speed in km/h on the UI.
+
+## 3. Kinematic bicycle backbone
+
+The bicycle abstraction collapses the front wheels into a single tyre at distance $a$ ahead of the centre of gravity
+and the rear wheels into one tyre at distance $b$. With longitudinal speed $v_x$ and turn radius $R$ we obtain
+$$
+R = \frac{v_x}{r}, \qquad r = \frac{v_x}{R}
+$$
+The body slip angle $\beta$ links the velocity vector to the chassis axis and is inferred from the lateral velocity
+state $v_y$ via $\beta = \arctan\left(\frac{v_y}{v_x}\right)$.
+
+## 4. Tyre and force model
+
+Each axle produces lateral force from a combined linear cornering stiffness and friction-circle limiter.
+The unsaturated force is $F_y = -C_\alpha \alpha$ where $\alpha$ is slip angle; it is then clamped with
+$$
+|F_y| \le \mu F_z
+$$
+Normal load $F_z$ is the static axle weight modified by lateral weight transfer. Lateral acceleration follows
+$$
+a_y = \frac{F_{y,f} + F_{y,r}}{m} - r v_x,
+$$
+with the displayed convenience unit $a_{y,g} = \frac{a_y}{9.81}$.
+
+## 5. Load distribution and parameters
+
+Static load split uses the front weight percentage from the sidebar. Front axle distance is $a = L \cdot w_f$ and
+rear distance $b = L - a$ with wheelbase $L = 2.8\,\text{m}$. Weight transfer is approximated by
+$$
+\Delta F_z = \frac{m a_y h_{cg}}{t}
+$$
+where $h_{cg}$ is the CG height and $t$ is the track width. The result adjusts axle loads before tyre saturation.
+
+## 6. Skidpad expectations
+
+For a constant-radius skidpad with radius $R$ and speed $v$ (converted to m/s) the steady-state yaw rate and
+lateral acceleration are
+$$
+r_{expected} = \frac{v}{R}, \qquad a_{y} = \frac{v^2}{R}, \qquad a_{y,g} = \frac{v^2}{R \cdot 9.81}
+$$
+The validation panel overlays these expected traces in dashed orange against measured telemetry sampled at 20 Hz.
+
+## 7. No-steer flat expectations
+
+With steering $\delta = 0$, road crown $= 0$, and friction coefficient $\mu = 1.0$, the car should track straight.
+Ideally $r \approx 0$ and $a_{y,g} \approx 0$. Residual numerical drift below the tolerance bands is treated as a pass.
+
+## 8. Mapping UI controls to symbols
+
+| Control | Symbol | Units | Description |
+|---------|--------|-------|-------------|
+| Speed | $v$ | km/h | Longitudinal speed converted to m/s internally |
+| Radius | $R$ | m | Skidpad radius used for expected curvature |
+| Tyre grip | $\mu$ | unitless | Peak friction coefficient for both axles |
+| Mass | $m$ | kg | Vehicle mass influencing axle loads |
+| CG height | $h_{cg}$ | m | Centre-of-gravity height used in weight transfer |
+| Front weight % | $w_f$ | % | Static front load fraction ($w_r = 1 - w_f$) |
+| Steering amplitude | $\delta$ | deg | Applied steer for transient or sine inputs |
+| Duration | $T$ | s | Simulation window length |
+
+## 9. Validation methodology
+
+Each validation case applies its parameters to the sandbox state, runs for $T_{total} = 1\,\text{s}$ settle plus
+$5\,\text{s}$ sampled at 20 Hz, and records yaw rate and lateral acceleration. Metrics include root-mean-square error,
+mean error, and maximum absolute error compared to expected profiles. Pass/fail badges reflect tolerances of
+$0.05\,\text{rad/s}$ for yaw rate and $0.05\,\text{g}$ for lateral acceleration.
+
+## 10. Limitations and roadmap
+
+The current model omits roll dynamics, aero load variation, and transient tyre relaxation. Upcoming work will
+introduce combined slip, per-corner spring-damper tuning, and parametric aero support. Until then, keep
+interpretations within the quasi-steady assumptions outlined above.
