@@ -1,7 +1,9 @@
 import { defineDocumentType, makeSource } from "contentlayer/source-files";
 import rehypeAutolinkHeadings from "rehype-autolink-headings";
+import rehypeKatex from "rehype-katex";
 import rehypeSlug from "rehype-slug";
 import remarkGfm from "remark-gfm";
+import remarkMath from "remark-math";
 
 const sharedFields = {
   title: { type: "string", required: true },
@@ -18,16 +20,18 @@ export const Guide = defineDocumentType(() => ({
   contentType: "mdx",
   fields: {
     ...sharedFields,
+    slug: { type: "string" },
+    published: { type: "boolean", default: true },
     tags: { type: "list", of: { type: "string" } }
   },
   computedFields: {
     slug: {
       type: "string",
-      resolve: (doc) => doc._raw.sourceFileName.replace(/\.mdx$/, "")
+      resolve: (doc) => doc.slug ?? doc._raw.sourceFileName.replace(/\.mdx$/, "")
     },
     slugAsParams: {
       type: "string",
-      resolve: (doc) => doc._raw.flattenedPath.replace(/^guides\//, "")
+      resolve: (doc) => doc.slug ?? doc._raw.flattenedPath.replace(/^guides\//, "")
     }
   }
 }));
@@ -69,7 +73,8 @@ export default makeSource({
   contentDirPath: "content",
   documentTypes: [Guide, BlogPost, Profile],
   mdx: {
-    remarkPlugins: [remarkGfm],
-    rehypePlugins: [rehypeSlug, [rehypeAutolinkHeadings, { behavior: "wrap" }]]
+    remarkPlugins: [[remarkMath, {}], remarkGfm],
+    rehypePlugins: [rehypeSlug, rehypeKatex, [rehypeAutolinkHeadings, { behavior: "wrap" }]]
   }
 });
+
