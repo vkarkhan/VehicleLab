@@ -1,6 +1,8 @@
 ﻿"use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { Controller, useForm } from "react-hook-form";
 import { decompressFromEncodedURIComponent } from "lz-string";
 import { useSearchParams } from "next/navigation";
 
@@ -13,18 +15,9 @@ import { bootModels } from "@/lib/models";
 import { getModel, listModels } from "@/lib/sim/registry";
 import { useSimStore } from "@/lib/store/simStore";
 import type { ModelParams } from "@/lib/sim/core";
+import { describeSchema, type FieldDescriptor } from "@/lib/forms/schema";
 
 bootModels();
-
-const ensureNumber = (value: string, fallback: number) => {
-  const parsed = Number(value);
-  return Number.isFinite(parsed) ? parsed : fallback;
-};
-
-const integratorOptions = [
-  { label: "RK4", value: "rk4" },
-  { label: "Semi-implicit", value: "semiImplicitEuler" },
-];
 
 const SimPage = () => {
   const models = useMemo(() => listModels(), []);
@@ -40,14 +33,26 @@ const SimPage = () => {
   const speedMultiplier = useSimStore((state) => state.speedMultiplier);
   const error = useSimStore((state) => state.error);
 
-  const [draftParams, setDraftParams] = useState<ModelParams>(params);
+  const model = useMemo(() => models.find((item) => item.id === modelId) ?? models[0], [modelId, models]);
+  const schema = model?.schema;
+  const resolver = useMemo(() => (schema ? zodResolver(schema) : undefined), [schema]);
+
+  const form = useForm<Record<string, unknown>>({
+    resolver: resolver as any,
+    defaultValues: params as Record<string, unknown>,
+    mode: "onBlur",
+  });
+  const watchedValues = form.watch();
+
+  const fieldGroups = useMemo(() => (schema ? describeSchema(schema) : { basic: [], advanced: [] }), [schema]);
+
   const [panelCollapsed, setPanelCollapsed] = useState(false);
   const workerRef = useRef<Worker | null>(null);
   const initRef = useRef(false);
 
   useEffect(() => {
-    setDraftParams(params);
-  }, [params]);
+    form.reset(params as Record<string, unknown>);
+  }, [form, params, modelId]);
 
   useEffect(() => {
     if (initRef.current || models.length === 0 || scenarios.length === 0) {
@@ -55,13 +60,13 @@ const SimPage = () => {
     }
 
     const applyPreset = (payload: { modelId?: string; scenarioId?: string; params?: ModelParams }) => {
-      const model = models.find((item) => item.id === payload.modelId) ?? models[0];
-      const mergedParams = { ...model.defaults, ...(payload.params ?? {}) };
-      const scenario = scenarios.find((item) => item.id === payload.scenarioId) ?? scenarios[0];
+      const presetModel = models.find((item) => item.id === payload.modelId) ?? models[0];
+      const mergedParams = { ...presetModel.defaults, ...(payload.params ?? {}) };
+      const presetScenario = scenarios.find((item) => item.id === payload.scenarioId) ?? scenarios[0];
 
-      actions.setModel(model.id, mergedParams);
-      actions.setScenario(scenario.id);
-      setDraftParams(mergedParams);
+      actions.setModel(presetModel.id, mergedParams);
+      actions.setScenario(presetScenario.id);
+      form.reset(mergedParams as Record<string, unknown>);
     };
 
     if (presetParam) {
@@ -84,7 +89,7 @@ const SimPage = () => {
       params: models[0]?.defaults,
     });
     initRef.current = true;
-  }, [actions, models, presetParam, scenarios]);
+  }, [actions, form, models, presetParam, scenarios]);
 
   useEffect(() => {
     const worker = new Worker(new URL("../../workers/simWorker.ts", import.meta.url));
@@ -117,18 +122,19 @@ const SimPage = () => {
   const startSimulation = useCallback(() => {
     const worker = workerRef.current;
     if (!worker) return;
+    const activeParams = params as Record<string, unknown>;
     actions.clearTelemetry();
     actions.setError(null);
     worker.postMessage({
       type: "start",
       modelId,
-      params: draftParams,
+      params: activeParams,
       scenarioId,
-      dt: typeof draftParams.dt === "number" ? draftParams.dt : undefined,
+      dt: typeof activeParams.dt === "number" ? activeParams.dt : undefined,
       speedMultiplier,
     });
     actions.setRunning(true);
-  }, [actions, draftParams, modelId, scenarioId, speedMultiplier]);
+  }, [actions, modelId, params, scenarioId, speedMultiplier]);
 
   const pauseSimulation = useCallback(() => {
     workerRef.current?.postMessage({ type: "pause" });
@@ -151,13 +157,13 @@ const SimPage = () => {
 
   const handleModelChange = useCallback(
     (nextModelId: string) => {
-      const model = models.find((item) => item.id === nextModelId);
-      if (!model) return;
-      actions.setModel(model.id, model.defaults);
-      setDraftParams(model.defaults);
-      workerRef.current?.postMessage({ type: "updateParams", params: model.defaults });
+      const nextModel = models.find((item) => item.id === nextModelId);
+      if (!nextModel) return;
+      actions.setModel(nextModel.id, nextModel.defaults);
+      form.reset(nextModel.defaults as Record<string, unknown>);
+      workerRef.current?.postMessage({ type: "updateParams", params: nextModel.defaults });
     },
-    [actions, models]
+    [actions, form, models]
   );
 
   const handleScenarioChange = useCallback(
@@ -177,21 +183,23 @@ const SimPage = () => {
   );
 
   const handleApply = useCallback(() => {
-    actions.setParams(draftParams);
-    workerRef.current?.postMessage({ type: "updateParams", params: draftParams });
-  }, [actions, draftParams]);
+    form.handleSubmit((values) => {
+      actions.setParams(values);
+      workerRef.current?.postMessage({ type: "updateParams", params: values });
+    })();
+  }, [actions, form]);
 
   const handleDefaults = useCallback(() => {
-    const model = getModel(modelId);
-    if (!model) return;
-    actions.setParams(model.defaults);
-    setDraftParams(model.defaults);
-    workerRef.current?.postMessage({ type: "updateParams", params: model.defaults });
-  }, [actions, modelId]);
+    const currentModel = getModel(modelId);
+    if (!currentModel) return;
+    form.reset(currentModel.defaults as Record<string, unknown>);
+    actions.setParams(currentModel.defaults);
+    workerRef.current?.postMessage({ type: "updateParams", params: currentModel.defaults });
+  }, [actions, form, modelId]);
 
   const handleSavePreset = useCallback(() => {
-    console.info("TODO: preset save", draftParams);
-  }, [draftParams]);
+    console.info("TODO: preset save", form.getValues());
+  }, [form]);
 
   useEffect(() => {
     const handleKey = (event: KeyboardEvent) => {
@@ -217,52 +225,38 @@ const SimPage = () => {
     return () => window.removeEventListener("keydown", handleKey);
   }, [handleReset, handleScenarioChange, pauseSimulation, running, scenarios, startSimulation]);
 
-  const handleFieldChange = useCallback((key: string, value: unknown) => {
-    setDraftParams((current) => ({
-      ...current,
-      [key]: value,
-    }));
-  }, []);
+  const renderField = (field: FieldDescriptor) => {
+    const errorMessage = form.formState.errors[field.name]?.message as string | undefined;
 
-  const renderField = (entry: [string, unknown]) => {
-    const [key, value] = entry;
-    if (typeof value === "number") {
+    if (field.type === "boolean") {
       return (
-        <label key={key} className="flex flex-col gap-1 text-xs font-medium">
-          <span className="text-slate-500 dark:text-slate-300">{key}</span>
-          <input
-            type="number"
-            value={String(draftParams[key] ?? "")}
-            onChange={(event) => handleFieldChange(key, ensureNumber(event.target.value, Number(value)))}
-            className="rounded-md border border-slate-300 px-2 py-1 text-sm dark:border-slate-700 dark:bg-slate-900"
-          />
-        </label>
+        <Controller
+          key={field.name}
+          control={form.control}
+          name={field.name}
+          render={({ field: controllerField }) => (
+            <label className="flex items-center gap-2 text-xs font-medium text-slate-500 dark:text-slate-300">
+              <input
+                type="checkbox"
+                checked={Boolean(controllerField.value)}
+                onChange={(event) => controllerField.onChange(event.target.checked)}
+              />
+              {field.label}
+            </label>
+          )}
+        />
       );
     }
 
-    if (typeof value === "boolean") {
+    if (field.type === "enum" && field.options) {
       return (
-        <label key={key} className="flex items-center gap-2 text-xs font-medium text-slate-500 dark:text-slate-300">
-          <input
-            type="checkbox"
-            checked={Boolean(draftParams[key])}
-            onChange={(event) => handleFieldChange(key, event.target.checked)}
-          />
-          {key}
-        </label>
-      );
-    }
-
-    if (key === "integrator") {
-      return (
-        <label key={key} className="flex flex-col gap-1 text-xs font-medium text-slate-500 dark:text-slate-300">
-          Integrator
+        <label key={field.name} className="flex flex-col gap-1 text-xs font-medium text-slate-500 dark:text-slate-300">
+          {field.label}
           <select
-            value={String(draftParams[key] ?? value)}
-            onChange={(event) => handleFieldChange(key, event.target.value)}
+            {...form.register(field.name)}
             className="rounded-md border border-slate-300 px-2 py-1 text-sm dark:border-slate-700 dark:bg-slate-900"
           >
-            {integratorOptions.map((option) => (
+            {field.options.map((option) => (
               <option key={option.value} value={option.value}>
                 {option.label}
               </option>
@@ -272,27 +266,42 @@ const SimPage = () => {
       );
     }
 
+    if (field.type === "number") {
+      return (
+        <label key={field.name} className="flex flex-col gap-1 text-xs font-medium text-slate-500 dark:text-slate-300">
+          <span>{field.label}</span>
+          <input
+            type="number"
+            {...form.register(field.name, { valueAsNumber: true })}
+            min={field.min}
+            max={field.max}
+            step={field.step ?? 0.01}
+            className="rounded-md border border-slate-300 px-2 py-1 text-sm dark:border-slate-700 dark:bg-slate-900"
+          />
+          {errorMessage && <span className="text-xs text-red-500">{errorMessage}</span>}
+        </label>
+      );
+    }
+
     return (
-      <label key={key} className="flex flex-col gap-1 text-xs font-medium text-slate-500 dark:text-slate-300">
-        {key}
+      <label key={field.name} className="flex flex-col gap-1 text-xs font-medium text-slate-500 dark:text-slate-300">
+        {field.label}
         <input
           type="text"
-          value={String(draftParams[key] ?? "")}
-          onChange={(event) => handleFieldChange(key, event.target.value)}
+          {...form.register(field.name)}
           className="rounded-md border border-slate-300 px-2 py-1 text-sm dark:border-slate-700 dark:bg-slate-900"
         />
+        {errorMessage && <span className="text-xs text-red-500">{errorMessage}</span>}
       </label>
     );
   };
 
-  const entries = Object.entries(draftParams ?? {});
-  const splitIndex = Math.min(entries.length, 4);
-  const basicEntries = entries.slice(0, splitIndex);
-  const advancedEntries = entries.slice(splitIndex);
+  const basicContent = fieldGroups.basic.map(renderField);
+  const advancedContent = fieldGroups.advanced.map(renderField);
 
   const shareConfig = useMemo(
-    () => ({ modelId, scenarioId, params: draftParams }),
-    [modelId, scenarioId, draftParams]
+    () => ({ modelId, scenarioId, params: watchedValues }),
+    [modelId, scenarioId, watchedValues]
   );
 
   return (
@@ -326,8 +335,8 @@ const SimPage = () => {
         <RightPanel
           collapsed={panelCollapsed}
           onToggle={() => setPanelCollapsed((value) => !value)}
-          basicContent={basicEntries.map(renderField)}
-          advancedContent={advancedEntries.map(renderField)}
+          basicContent={basicContent}
+          advancedContent={advancedContent}
           onApply={handleApply}
           onDefaults={handleDefaults}
           onSavePreset={handleSavePreset}
