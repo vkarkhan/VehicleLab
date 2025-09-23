@@ -1,4 +1,4 @@
-﻿import type { SandboxState } from "@/lib/stateSchema";
+import type { SandboxState } from "@/lib/stateSchema";
 import { clamp, roundTo } from "@/lib/utils";
 
 const G = 9.81;
@@ -167,6 +167,10 @@ export function stepBicycleModel(
 }
 
 export function steeringForState(state: SandboxState, time: number) {
+  if (state.manoeuvre === "no-steer") {
+    return 0;
+  }
+
   const amplitudeRad = (state.steeringAmplitude * Math.PI) / 180;
 
   if (state.steeringMode === "step") {
@@ -179,10 +183,11 @@ export function steeringForState(state: SandboxState, time: number) {
     return amplitudeRad * pulse;
   }
 
-  const omega = 2 * Math.PI * state.sineFrequency;
+  const omega = 2 * Math.PI * Math.max(state.sineFrequency, 0);
   return amplitudeRad * Math.sin(omega * time);
 }
 
 export function speedToMetersPerSecond(speedKmH: number) {
   return speedKmH / 3.6;
 }
+
