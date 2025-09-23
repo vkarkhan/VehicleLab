@@ -278,7 +278,7 @@ export function SandboxCanvas({
   return (
     <Canvas
       ref={canvasRef}
-      className="relative h-[420px] w-full overflow-hidden rounded-3xl border border-slate-200 bg-gradient-to-br from-slate-100 via-white to-slate-200 shadow-inner dark:border-slate-800 dark:bg-gradient-to-br dark:from-slate-900 dark:via-slate-950 dark:to-slate-900"
+      className="relative h-[540px] w-full overflow-hidden rounded-3xl border border-slate-200 bg-gradient-to-br from-slate-100 via-white to-slate-200 shadow-inner dark:border-slate-800 dark:bg-gradient-to-br dark:from-slate-900 dark:via-slate-950 dark:to-slate-900"
       shadows
       dpr={dpr}
       gl={{ antialias: true }}
@@ -658,3 +658,6 @@ function Scene({
     </>
   );
 }
+
+
+

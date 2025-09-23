@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import { Inter, Sora } from "next/font/google";
 import "@/styles/globals.css";
+import "katex/dist/katex.min.css";
 
 import { Footer } from "@/components/Footer";
 import { Navbar } from "@/components/Navbar";
@@ -70,3 +71,5 @@ export default function RootLayout({
     </html>
   );
 }
+
+

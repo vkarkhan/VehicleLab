@@ -1,7 +1,9 @@
 import { allBlogPosts, allGuides } from "contentlayer/generated";
 
 export function getGuides() {
-  return allGuides.sort((a, b) => (a.publishedAt > b.publishedAt ? -1 : 1));
+  return allGuides
+    .filter((guide) => guide.published !== false)
+    .sort((a, b) => (a.publishedAt > b.publishedAt ? -1 : 1));
 }
 
 export function getGuideBySlug(slug: string) {
@@ -15,3 +17,5 @@ export function getBlogPosts() {
 export function getBlogPostBySlug(slug: string) {
   return getBlogPosts().find((post) => post.slug === slug);
 }
+
+
