@@ -1,0 +1,56 @@
+---
+title: "2-DOF Linear Bicycle"
+description: "Small-angle lateral-yaw model with linear tyre stiffness and constant forward speed."
+modelId: "lin2dof"
+scenarioId: "step-steer"
+order: 2
+---
+
+## At a glance
+
+- Captures coupled lateral velocity and yaw-rate dynamics with constant longitudinal speed.
+- Linear tyre model (mu constant) keeps the equations analytically friendly.
+- Useful for stability margin studies, controller frequency-response checks, and quick yaw-gain estimates.
+- Omits nonlinear slip saturation and roll, so limit handling must be validated elsewhere.
+
+## Equations
+
+States: $, $, $\psi$, $, $ with constant forward speed $. Steering input is the front axle steer $\delta$.
+
+$$
+m (\dot{v_y} + v r) = C_f (\delta - (v_y + a r)/v) + C_r (-(v_y - b r)/v)
+I_z \dot{r} = a C_f (\delta - (v_y + a r)/v) - b C_r (-(v_y - b r)/v)
+\dot{\psi} = r
+\dot{x} = v \cos \psi - v_y \sin \psi
+\dot{y} = v \sin \psi + v_y \cos \psi
+$$
+
+Outputs include yaw rate $, lateral acceleration  \approx \dot{v_y} + v r$, and sideslip $\beta = \arctan2(v_y, v)$.
+
+## Parameters & units
+
+| Parameter | Description | Typical range |
+| --- | --- | --- |
+| m [kg] | Vehicle mass | 800 - 1800 |
+| Iz [kg*m^2] | Yaw moment of inertia | 900 - 3200 |
+| a [m] | CG to front axle | 1.0 - 1.7 |
+| b [m] | CG to rear axle | 1.0 - 1.7 |
+| Cf [N/rad] | Front cornering stiffness | 30e3 - 90e3 |
+| Cr [N/rad] | Rear cornering stiffness | 30e3 - 90e3 |
+| v [m/s] | Constant forward speed | 10 - 70 |
+| dt [s] | Simulation step size | 0.005 - 0.02 |
+| processNoise | Toggle additive noise | off / on |
+
+## Assumptions & limits
+
+- Small slip angles (linear tyre approximation).
+- Constant speed, no roll or heave dynamics.
+- Tyre properties lumped into single cornering stiffness per axle.
+
+## Canonical scenarios
+
+1. **5 deg step steer at 25 m/s** -- baseline yaw-rate gain and damping check.
+2. **Frequency sweep** -- optional manual scenario to examine under/over-steer trends.
+3. **Parameter sweep** -- vary Cf/Cr to visualize stability margin badges.
+
+Use the sandbox link below to load the default step-steer scenario for this model.

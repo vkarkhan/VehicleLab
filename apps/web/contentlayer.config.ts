@@ -56,6 +56,29 @@ export const BlogPost = defineDocumentType(() => ({
   }
 }));
 
+export const ModelDoc = defineDocumentType(() => ({
+  name: "ModelDoc",
+  filePathPattern: "models/*.mdx",
+  contentType: "mdx",
+  fields: {
+    title: { type: "string", required: true },
+    description: { type: "string", required: true },
+    modelId: { type: "string", required: true },
+    scenarioId: { type: "string", default: "step-steer" },
+    order: { type: "number" }
+  },
+  computedFields: {
+    slug: {
+      type: "string",
+      resolve: (doc) => doc._raw.sourceFileName.replace(/\.mdx$/, "")
+    },
+    slugAsParams: {
+      type: "string",
+      resolve: (doc) => doc._raw.flattenedPath.replace(/^models\//, "")
+    }
+  }
+}));
+
 export const Profile = defineDocumentType(() => ({
   name: "Profile",
   filePathPattern: `profile.json`,
@@ -71,7 +94,7 @@ export const Profile = defineDocumentType(() => ({
 
 export default makeSource({
   contentDirPath: "content",
-  documentTypes: [Guide, BlogPost, Profile],
+  documentTypes: [Guide, BlogPost, ModelDoc, Profile],
   mdx: {
     remarkPlugins: [[remarkMath, {}], remarkGfm],
     rehypePlugins: [rehypeSlug, rehypeKatex, [rehypeAutolinkHeadings, { behavior: "wrap" }]]
