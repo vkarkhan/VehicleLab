@@ -1,8 +1,9 @@
-﻿"use client";
+"use client";
 
 import type { ReactNode } from "react";
 
 import { Button } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
 
 import type { ShareConfig } from "./ShareLink";
 import { ShareLink } from "./ShareLink";
@@ -30,12 +31,16 @@ export const RightPanel = ({
 }: RightPanelProps) => {
   return (
     <aside
-      className={lex h-full flex-col border-l border-slate-200 bg-white/90 transition-all dark:border-slate-800 dark:bg-slate-950/90 }
+      className={cn(
+        "relative flex h-full flex-col border-l border-slate-200 bg-white/90 transition-all dark:border-slate-800 dark:bg-slate-950/90",
+        collapsed ? "w-12" : "w-80"
+      )}
     >
       <button
         type="button"
         onClick={onToggle}
         className="flex h-12 items-center justify-center border-b border-slate-200 text-slate-500 transition-colors hover:text-slate-900 dark:border-slate-800 dark:text-slate-400 dark:hover:text-slate-100"
+        aria-label={collapsed ? "Expand parameters" : "Collapse parameters"}
       >
         {collapsed ? ">" : "<"}
       </button>
@@ -48,7 +53,7 @@ export const RightPanel = ({
             <div className="space-y-3">{basicContent}</div>
           </section>
           <section>
-            <details className="rounded-md border border-slate-200 bg-slate-50 dark:border-slate-800 dark:bg-slate-900">
+            <details className="rounded-md border border-slate-200 bg-slate-50 open:shadow-sm dark:border-slate-800 dark:bg-slate-900">
               <summary className="cursor-pointer px-3 py-2 text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-300">
                 Advanced
               </summary>
@@ -59,10 +64,10 @@ export const RightPanel = ({
       )}
       {!collapsed && (
         <div className="grid grid-cols-2 gap-2 border-t border-slate-200 p-3 dark:border-slate-800">
-          <Button size="sm" onClick={onApply}>
+          <Button size="sm" onClick={onApply} title="Apply parameter changes">
             Apply
           </Button>
-          <Button size="sm" variant="outline" onClick={onDefaults}>
+          <Button size="sm" variant="outline" onClick={onDefaults} title="Reset to factory defaults">
             Factory defaults
           </Button>
           <Button
@@ -70,6 +75,7 @@ export const RightPanel = ({
             variant="outline"
             onClick={() => onSavePreset?.()}
             className="col-span-1"
+            title="Store preset in this browser"
           >
             Save preset
           </Button>

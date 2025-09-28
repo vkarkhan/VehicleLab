@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import { useState } from "react";
 import { compressToEncodedURIComponent } from "lz-string";
@@ -22,8 +22,8 @@ export const ShareLink = ({ config }: ShareLinkProps) => {
   const handleShare = async () => {
     try {
       const payload = compressToEncodedURIComponent(JSON.stringify(config));
-      const base = window.location.origin;
-      const url = ${base}/sim?p=;
+      const base = typeof window !== "undefined" ? window.location.origin : "";
+      const url = base + "/sim?p=" + payload;
       if (navigator.clipboard?.writeText) {
         await navigator.clipboard.writeText(url);
       } else {
@@ -42,7 +42,7 @@ export const ShareLink = ({ config }: ShareLinkProps) => {
   };
 
   return (
-    <Button variant="outline" size="sm" onClick={handleShare}>
+    <Button variant="outline" size="sm" onClick={handleShare} title="Copy shareable sandbox link">
       {copied ? "Link copied" : "Share"}
     </Button>
   );

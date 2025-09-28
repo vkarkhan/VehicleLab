@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import { useMemo, useRef } from "react";
 import { Canvas, useFrame } from "@react-three/fiber";
@@ -95,10 +95,10 @@ export const SimCanvas = () => {
         <OrbitControls enablePan enableZoom zoomSpeed={0.6} />
       </Canvas>
       <div className="pointer-events-none absolute right-4 top-4 space-y-1 rounded-md bg-white/85 p-3 text-xs font-medium text-slate-700 shadow dark:bg-slate-900/80 dark:text-slate-200">
-        <div>ψ {(lastTelemetry?.psi ?? 0).toFixed(2)} rad</div>
+        <div>psi {(lastTelemetry?.psi ?? 0).toFixed(2)} rad</div>
         <div>r {(lastTelemetry?.r ?? 0).toFixed(2)} rad/s</div>
-        <div>ay {(lastTelemetry?.ay ?? 0).toFixed(2)} m/s²</div>
-        <div>β {(lastTelemetry?.beta ?? 0).toFixed(2)} rad</div>
+        <div>ay {(lastTelemetry?.ay ?? 0).toFixed(2)} m/s^2</div>
+        <div>beta {(lastTelemetry?.beta ?? 0).toFixed(2)} rad</div>
       </div>
     </div>
   );
