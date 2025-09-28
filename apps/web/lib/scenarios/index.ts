@@ -97,7 +97,7 @@ export const createScenario = (
 ): ScenarioSampler => {
   const preset = getScenarioPreset(id);
   if (!preset) {
-    throw new Error(Unknown scenario: );
+    throw new Error(`Unknown scenario: ${id}`);
   }
   return preset.create({ ...preset.defaults, ...overrides } as any);
 };

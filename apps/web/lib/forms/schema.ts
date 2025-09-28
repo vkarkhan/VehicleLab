@@ -37,7 +37,7 @@ const parseDescription = (name: string, description?: string) => {
     return { label: name, group: "basic" as const };
   }
   const [labelRaw, groupRaw] = description.split("|");
-  const group = groupRaw?.trim() === "advanced" ? "advanced" : "basic";
+  const group: "basic" | "advanced" = groupRaw?.trim() === "advanced" ? "advanced" : "basic";
   return {
     label: (labelRaw ?? name).trim(),
     group,
