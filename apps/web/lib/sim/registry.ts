@@ -1,9 +1,9 @@
-﻿import type { ModelDef } from "./core";
+import type { ModelDef, ModelParams, ModelState } from "./core";
 
-const registry: Record<string, ModelDef> = {};
+const registry: Record<string, ModelDef<any, any>> = {};
 
-export const registerModel = (model: ModelDef) => {
-  registry[model.id] = model;
+export const registerModel = <P extends ModelParams, S extends ModelState>(model: ModelDef<P, S>) => {
+  registry[model.id] = model as ModelDef<any, any>;
   return model;
 };
 
