@@ -1,37 +1,15 @@
-﻿declare const self: DedicatedWorkerGlobalScope;
-export {};
+/// <reference lib="webworker" />
 
 import { bootModels } from "../lib/models";
 import { createScenario, type ScenarioSampler } from "../lib/scenarios";
 import { getModel } from "../lib/sim/registry";
-import type {
-  ModelDef,
-  ModelParams,
-  ModelState,
-  Telemetry,
-} from "../lib/sim/core";
+import type { ModelDef, ModelParams, ModelState, Telemetry } from "../lib/sim/core";
+import type { SimStartMessage, SimWorkerMessage } from "../lib/sim/messages";
+
+declare const self: DedicatedWorkerGlobalScope;
+export {};
 
 bootModels();
-
-type StartMessage = {
-  type: "start";
-  modelId: string;
-  params: ModelParams;
-  scenarioId: string;
-  dt?: number;
-  seed?: number;
-  speedMultiplier?: number;
-  scenarioOverrides?: Record<string, unknown>;
-};
-
-type WorkerMessage =
-  | StartMessage
-  | { type: "pause" }
-  | { type: "resume" }
-  | { type: "reset" }
-  | { type: "updateParams"; params: ModelParams }
-  | { type: "updateScenario"; scenarioId: string; overrides?: Record<string, unknown> }
-  | { type: "setSpeed"; multiplier: number };
 
 type Runtime = {
   model?: ModelDef;
@@ -59,36 +37,43 @@ const runtime: Runtime = {
 let seededRandom: (() => number) | null = null;
 const originalRandom = Math.random;
 
-self.onmessage = (event: MessageEvent<WorkerMessage>) => {
+self.onmessage = (event: MessageEvent<SimWorkerMessage>) => {
   try {
     const message = event.data;
     switch (message.type) {
       case "start":
-        return handleStart(message);
+        handleStart(message);
+        break;
       case "pause":
-        return pause("paused");
+        pause("paused");
+        break;
       case "resume":
-        return resume();
+        resume();
+        break;
       case "reset":
-        return reset();
+        reset();
+        break;
       case "updateParams":
-        return updateParams(message.params);
+        updateParams(message.params);
+        break;
       case "updateScenario":
-        return updateScenario(message.scenarioId, message.overrides);
+        updateScenario(message.scenarioId, message.overrides);
+        break;
       case "setSpeed":
-        return setSpeed(message.multiplier);
+        setSpeed(message.multiplier);
+        break;
       default:
-        return;
+        break;
     }
   } catch (error) {
     emitError(error);
   }
 };
 
-const handleStart = (message: StartMessage) => {
+const handleStart = (message: SimStartMessage) => {
   const model = getModel(message.modelId);
   if (!model) {
-    throw new Error(Model  not registered);
+    throw new Error("Model not registered: " + message.modelId);
   }
 
   runtime.model = model;
@@ -96,10 +81,7 @@ const handleStart = (message: StartMessage) => {
   runtime.dt = typeof message.dt === "number" ? message.dt : 0.01;
   runtime.speedMultiplier = message.speedMultiplier ?? 1;
   runtime.scenarioId = message.scenarioId;
-  runtime.scenarioSampler = createScenario(
-    message.scenarioId,
-    message.scenarioOverrides
-  );
+  runtime.scenarioSampler = createScenario(message.scenarioId, message.scenarioOverrides);
   runtime.state = model.init(runtime.params as any);
   runtime.t = 0;
 
@@ -109,14 +91,10 @@ const handleStart = (message: StartMessage) => {
 };
 
 const updateParams = (params: ModelParams) => {
-  if (!runtime.model) return;
   runtime.params = { ...runtime.params, ...params };
 };
 
-const updateScenario = (
-  scenarioId: string,
-  overrides?: Record<string, unknown>
-) => {
+const updateScenario = (scenarioId: string, overrides?: Record<string, unknown>) => {
   runtime.scenarioId = scenarioId;
   runtime.scenarioSampler = createScenario(scenarioId, overrides);
 };
@@ -170,12 +148,7 @@ const step = () => {
     params: runtime.params,
   });
 
-  runtime.state = runtime.model.step(
-    runtime.state,
-    inputs,
-    dt,
-    runtime.params
-  );
+  runtime.state = runtime.model.step(runtime.state, inputs, dt, runtime.params);
   runtime.t += dt;
 
   emitTick();
