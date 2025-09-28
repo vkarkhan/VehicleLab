@@ -14,18 +14,18 @@ API routes live inside the Next.js app (`app/api`). A `/api/ping` route and matc
 ## Monorepo Layout
 ```
 vehiclelab/
-├── apps/
-│   └── web/            # Next.js application (+ Prisma, Contentlayer, etc.)
-├── docs/AUDIT.md       # Audit report & local setup notes
-├── .env.example        # Copy to .env.local for development
-├── .nvmrc              # Node version pin (22.9.0)
-└── package.json        # npm workspace entry point
+|-- apps/
+|     \-- web/            # Next.js application (+ Prisma, Contentlayer, etc.)
+|-- docs/AUDIT.md       # Audit report & local setup notes
+|-- .env.example        # Copy to .env.local for development
+|-- .nvmrc              # Node version pin (22.9.0)
+\-- package.json        # npm workspace entry point
 ```
 
 ## Prerequisites
 1. **Node.js:** Use the LTS 22.x line (`nvm use` will read `.nvmrc`).
 2. **npm:** Version 10+ (ships with Node 22).
-3. **SQLite:** Bundled with Node on macOS/Linux; Windows users can rely on Prisma’s binary.
+3. **SQLite:** Bundled with Node on macOS/Linux; Windows users can rely on Prisma's binary.
 
 ## Getting Started (Local SQLite)
 ```bash
@@ -37,24 +37,32 @@ npm run db:setup
 npm run dev
 ```
 
-Open <http://localhost:3000>, then click **“Call /api/ping”** on the homepage to verify the API handler responds.
+Open <http://localhost:3000>, then click **"Call /api/ping"** on the homepage to verify the API handler responds.
 
 Note: Postgres and provider-specific column types will return in a follow-up PR once local testing wraps up.
 
 ### Available Scripts
-- `npm run dev` – Starts `@app/web` in dev mode (HMR + API routes).
-- `npm run build` – Builds the Next.js app for production.
-- `npm run start` – Runs the production build locally.
-- `npm run db:setup` – Runs Prisma generate + push via the app workspace.
-- `npm run dev -w @app/web` – Direct access to the web workspace.
+- `npm run dev` - Starts `@app/web` in dev mode (HMR + API routes).
+- `npm run build` - Builds the Next.js app for production.
+- `npm run start` - Runs the production build locally.
+- `npm run db:setup` - Runs Prisma generate + push via the app workspace.
+- `npm run dev -w @app/web` - Direct access to the web workspace.
 - Within `apps/web`:
-  - `npm run lint` – ESLint via `next lint`.
-  - `npm run typecheck` – TypeScript diagnostics.
-  - `npm run test` – Playwright tests (requires browsers installed).
-  - `npm run content` – Regenerate Contentlayer output manually.
-  - `npm run db:generate` – Regenerates the Prisma client.
-  - `npm run db:push` – Applies the Prisma schema to the local SQLite file.
-  - `npm run db:studio` – Opens Prisma Studio against the local database.
+  - `npm run lint` - ESLint via `next lint`.
+  - `npm run typecheck` - TypeScript diagnostics.
+  - `npm run test` - Playwright tests (requires browsers installed).
+  - `npm run content` - Regenerate Contentlayer output manually.
+  - `npm run db:generate` - Regenerates the Prisma client.
+  - `npm run db:push` - Applies the Prisma schema to the local SQLite file.
+  - `npm run db:studio` - Opens Prisma Studio against the local database.
+
+## Simulation Sandbox
+- Visit `/sim` for the canvas-first sandbox. The top bar switches models and scenarios, while the right panel exposes schema-driven parameters grouped into "Basic" and "Advanced".
+- Keyboard shortcuts: **Space** to run/pause, **R** to reset, number keys to swap scenarios instantly.
+- Telemetry mini-plots live in the collapsible footer; a ring buffer (~20 000 samples) keeps memory stable.
+- Share presets via the "Share" button (compressed into the `p` query param). Per-model docs live under `/docs/models/...` with one-click "Open in Sandbox" links.
+- Baseline validation badges trigger headless checks (e.g. unicycle constant-radius skidpad) and surface pass/fail with numerical metrics.
+- When Web Workers are unavailable the simulation loop falls back to a main-thread runner and displays a warning banner (expect higher CPU use).
 
 ## Environment Variables
 All configuration lives in `.env.local`. Start from `.env.example` which documents every supported variable:
@@ -77,7 +85,7 @@ All configuration lives in `.env.local`. Start from `.env.example` which documen
 | `LHCI_URL` | Optional override when running the Lighthouse script. |
 | `PLAYWRIGHT_BASE_URL` | Override the Playwright target URL. |
 
-> ℹ️ Secrets are **not** committed. Keep your personal `.env.local` out of git.
+> Info Secrets are **not** committed. Keep your personal `.env.local` out of git.
 
 ## Troubleshooting
 - **npm 403 / registry issues:** If `npm install` fails with `403 Forbidden`, reset the registry:
