@@ -78,6 +78,32 @@ const radioBaseClasses =
 const radioActiveClasses = "data-[active=true]:border-brand-500 data-[active=true]:bg-brand-500 data-[active=true]:text-white";
 const radioInactiveClasses =
   "data-[active=false]:bg-white/60 data-[active=false]:text-slate-600 dark:data-[active=false]:bg-slate-900/40 dark:data-[active=false]:text-slate-300";
+const spotlightTiles = [
+  {
+    title: "Passenger car baseline",
+    label: "Reference rig",
+    description:
+      "Start from a neutral hatchback tune and iterate quickly by adjusting mass, ride height, and tyre grip.",
+    className:
+      "group relative flex h-full flex-col overflow-hidden rounded-3xl bg-gradient-to-br from-slate-950 via-slate-900 to-sky-800 p-6 text-white shadow-lg"
+  },
+  {
+    title: "Two-wheeler dynamics",
+    label: "Motorcycle",
+    description:
+      "Explore balance-sensitive bikes with lean-aware steering traces and tyre load cues.",
+    className:
+      "group relative flex h-full flex-col overflow-hidden rounded-3xl bg-gradient-to-br from-rose-900 via-orange-700 to-amber-500 p-6 text-white shadow-lg"
+  },
+  {
+    title: "Heavy truck validation",
+    label: "Fleet",
+    description:
+      "Stress-test payload shifts and wheelbase changes with live axle utilisation callouts.",
+    className:
+      "group relative flex h-full flex-col overflow-hidden rounded-3xl bg-gradient-to-br from-slate-950 via-slate-800 to-emerald-700 p-6 text-white shadow-lg"
+  }
+] as const;
 
 interface SandboxClientProps {
   initialState: SandboxState;
@@ -258,6 +284,23 @@ export function SandboxClient({ initialState, enable3D, isPro = false }: Sandbox
 
   return (
     <div className="space-y-12" aria-busy={isPending}>
+      <section className="grid gap-4 md:grid-cols-3">
+        {spotlightTiles.map((tile) => (
+          <article key={tile.title} className={tile.className}>
+            <div className="absolute inset-0 bg-white/10 opacity-0 transition duration-300 group-hover:opacity-20" aria-hidden="true" />
+            <div className="relative flex flex-col gap-3">
+              <span className="text-xs font-semibold uppercase tracking-wide text-white/70">{tile.label}</span>
+              <h3 className="text-xl font-semibold">{tile.title}</h3>
+              <p className="text-sm text-white/80">{tile.description}</p>
+            </div>
+            <div className="relative mt-auto flex items-center gap-2 pt-6 text-sm font-semibold text-white">
+              <span className="inline-flex h-2 w-2 rounded-full bg-white/80" />
+              <span>Inspired by MathWorks reference imagery</span>
+            </div>
+          </article>
+        ))}
+      </section>
+
       <div className="flex flex-col gap-8 xl:flex-row">
         <div className="flex-1 space-y-6">
           <div className="flex flex-col gap-5">

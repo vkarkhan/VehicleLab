@@ -1,0 +1,54 @@
+---
+title: "Kinematic Unicycle"
+description: "Point-mass heading integration with a curvature-controlled steer input."
+modelId: "unicycle"
+scenarioId: "const-radius"
+order: 1
+---
+
+## At a glance
+
+- Idealized point-mass with a single yaw DOF -- perfect for fast sandbox prototyping.
+- Ignores lateral slip and tyre load transfer, so it stays stable even at unrealistic speeds.
+- Best used for layout planning, animation blocking, and controller sketches where tyre limits are secondary.
+- Lightweight enough to run thousands of trajectories for Monte-Carlo studies.
+
+## Equations
+
+The state is $x, y, \psi$ with a constant forward speed $v$. Steering is expressed as curvature via an effective wheelbase $L_{	ext{eff}}$.
+
+$$
+\dot{x} = v \cos \psi
+\qquad
+\dot{y} = v \sin \psi
+\qquad
+\dot{\psi} = rac{v}{L_{	ext{eff}}} 	an \delta
+$$
+
+Implemented integrators:
+
+- **semiImplicitEuler** -- fast, first order.
+- **rk4** -- stable fourth-order Runge-Kutta for smooth trajectories.
+
+## Parameters & units
+
+| Parameter | Description | Typical range |
+| --- | --- | --- |
+| v [m/s] | Forward speed | 0 - 60 |
+| L_eff [m] | Effective wheelbase | 2.4 - 3.2 |
+| dt [s] | Simulation step size | 0.005 - 0.02 |
+| processNoise | Toggle additive noise | off / on |
+
+## Assumptions & limits
+
+- No tyre slip or lateral dynamics; the path is exactly curvature-driven.
+- Gravity, load transfer, and acceleration limits are ignored.
+- Suitable only for low to medium fidelity previews -- not chassis tuning.
+
+## Canonical scenarios
+
+1. **Constant radius skidpad** -- validates steady yaw with minimal drift.
+2. **Step steer to heading** -- exposes integrator and time-step setup.
+3. **Noise-injected patrol** -- enables stochastic stress testing with noise enabled.
+
+A shareable sandbox preset is provided below to jump straight into the circular-skidpad baseline run.
