@@ -34,3 +34,6 @@ coverage
 
 # OS junk
 .DS_Store
+
+# Husky generated files
+/.husky/_
