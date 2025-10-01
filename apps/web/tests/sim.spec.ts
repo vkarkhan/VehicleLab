@@ -9,6 +9,11 @@ test("sandbox emits telemetry", async ({ page }) => {
   const sampleCount = page.locator("[data-test=\"telemetry-sample-count\"]");
   await expect(sampleCount).toHaveText(/0 samples/i);
 
+  const metricToggle = page.getByRole("button", { name: "m/s^2" });
+  await metricToggle.click();
+  await expect(metricToggle).toHaveAttribute("aria-pressed", "true");
+  await expect(page.getByRole("button", { name: "g" })).toHaveAttribute("aria-pressed", "false");
+
   await runButton.click();
 
   await expect.poll(async () => {
@@ -18,3 +23,4 @@ test("sandbox emits telemetry", async ({ page }) => {
 
   await expect(page.locator("canvas")).toBeVisible();
 });
+

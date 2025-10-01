@@ -5,6 +5,7 @@ import type { ChangeEvent } from "react";
 
 import { Button } from "@/components/ui/button";
 import { Slider } from "@/components/ui/slider";
+import { InfoTooltip } from "@/components/InfoTooltip";
 import { cn } from "@/lib/utils";
 import type { ScenarioPreset } from "@/lib/scenarios";
 import type { ModelDef } from "@/lib/sim/core";
@@ -24,6 +25,8 @@ type TopBarProps = {
   onToggleRun: () => void;
   onReset: () => void;
   onSpeedChange: (multiplier: number) => void;
+  lateralUnit: "g" | "mps2";
+  onLateralUnitChange: (unit: "g" | "mps2") => void;
   shareConfig: ShareConfig;
   baselineBadge?: {
     status: "idle" | "running" | "pass" | "fail";
@@ -43,6 +46,8 @@ export const TopBar = ({
   onToggleRun,
   onReset,
   onSpeedChange,
+  lateralUnit,
+  onLateralUnitChange,
   shareConfig,
   baselineBadge,
 }: TopBarProps) => {
@@ -121,6 +126,46 @@ export const TopBar = ({
         />
       </div>
 
+      <div className="flex flex-wrap items-center gap-2">
+        <span className="text-sm font-medium text-slate-600 dark:text-slate-300">Lateral accel</span>
+        <InfoTooltip
+          content="Switch between gravitational units and metric acceleration for telemetry and plots."
+          label="Lateral acceleration units"
+        />
+        <div className="flex items-center gap-1 rounded-full border border-slate-200 bg-white/80 p-1 text-xs font-semibold text-slate-600 dark:border-slate-700 dark:bg-slate-900/70 dark:text-slate-300">
+          <button
+            type="button"
+            onClick={() => {
+              if (lateralUnit !== "g") onLateralUnitChange("g");
+            }}
+            className={cn(
+              "rounded-full px-2.5 py-1 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500",
+              lateralUnit === "g"
+                ? "bg-slate-900 text-white shadow-sm dark:bg-white dark:text-slate-900"
+                : "hover:text-slate-900 dark:hover:text-white"
+            )}
+            aria-pressed={lateralUnit === "g"}
+          >
+            g
+          </button>
+          <button
+            type="button"
+            onClick={() => {
+              if (lateralUnit !== "mps2") onLateralUnitChange("mps2");
+            }}
+            className={cn(
+              "rounded-full px-2.5 py-1 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500",
+              lateralUnit === "mps2"
+                ? "bg-slate-900 text-white shadow-sm dark:bg-white dark:text-slate-900"
+                : "hover:text-slate-900 dark:hover:text-white"
+            )}
+            aria-pressed={lateralUnit === "mps2"}
+          >
+            m/s^2
+          </button>
+        </div>
+      </div>
+
       {baselineBadge && (
         <div className="flex items-center gap-2 rounded-md border border-slate-200 bg-white/70 px-3 py-1 text-sm dark:border-slate-800 dark:bg-slate-900/70">
           <span>Baseline</span>
@@ -166,3 +211,4 @@ export const TopBar = ({
     </div>
   );
 };
+

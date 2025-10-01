@@ -1,5 +1,6 @@
 "use client";
 
+import dynamic from "next/dynamic";
 import { useCallback, useEffect, useMemo, useRef, useState, useTransition } from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Controller, useForm } from "react-hook-form";
@@ -8,7 +9,6 @@ import { useSearchParams } from "next/navigation";
 
 import { BottomPlots } from "@/components/sim/BottomPlots";
 import { RightPanel } from "@/components/sim/RightPanel";
-import { SimCanvas } from "@/components/sim/SimCanvas";
 import { TopBar } from "@/components/sim/TopBar";
 import { listScenarioPresets } from "@/lib/scenarios";
 import { bootModels } from "@/lib/models";
@@ -22,6 +22,15 @@ import { runBaseline } from "@/lib/validation/baseline";
 
 bootModels();
 
+const SimCanvas = dynamic(() => import("@/components/sim/SimCanvas").then((mod) => mod.SimCanvas), {
+  ssr: false,
+  loading: () => (
+    <div className="flex h-full items-center justify-center bg-slate-100 text-sm text-slate-500 dark:bg-slate-900 dark:text-slate-400">
+      Loading 3D view...
+    </div>
+  ),
+});
+
 const SimPage = () => {
   const models = useMemo(() => listModels(), []);
   const scenarios = useMemo(() => listScenarioPresets(), []);
@@ -34,6 +43,7 @@ const SimPage = () => {
   const scenarioId = useSimStore((state) => state.scenarioId);
   const params = useSimStore((state) => state.params);
   const speedMultiplier = useSimStore((state) => state.speedMultiplier);
+  const lateralUnit = useSimStore((state) => state.lateralUnit);
   const error = useSimStore((state) => state.error);
   const baselineStatus = useSimStore((state) => state.baselineStatus);
   const baselineMetrics = useSimStore((state) => state.baselineMetrics);
@@ -103,7 +113,7 @@ const SimPage = () => {
       return;
     }
 
-    const applyPreset = (payload: { modelId?: string; scenarioId?: string; params?: ModelParams; speedMultiplier?: number }) => {
+    const applyPreset = (payload: { modelId?: string; scenarioId?: string; params?: ModelParams; speedMultiplier?: number; lateralUnit?: "g" | "mps2" }) => {
       const presetModel = models.find((item) => item.id === payload.modelId) ?? models[0];
       const mergedParams = { ...presetModel.defaults, ...(payload.params ?? {}) };
       const presetScenario = scenarios.find((item) => item.id === payload.scenarioId) ?? scenarios[0];
@@ -112,6 +122,9 @@ const SimPage = () => {
       actions.setScenario(presetScenario.id);
       if (typeof payload.speedMultiplier === "number") {
         actions.setSpeedMultiplier(payload.speedMultiplier);
+      }
+      if (payload.lateralUnit === "g" || payload.lateralUnit === "mps2") {
+        actions.setLateralUnit(payload.lateralUnit);
       }
       form.reset(mergedParams as Record<string, unknown>);
     };
@@ -134,7 +147,7 @@ const SimPage = () => {
       try {
         const storedRaw = window.localStorage.getItem("vehicleLab:sandbox");
         if (storedRaw) {
-          const stored = JSON.parse(storedRaw) as { modelId?: string; scenarioId?: string; params?: ModelParams; speedMultiplier?: number };
+          const stored = JSON.parse(storedRaw) as { modelId?: string; scenarioId?: string; params?: ModelParams; speedMultiplier?: number; lateralUnit?: "g" | "mps2" };
           applyPreset(stored);
           if (typeof stored.speedMultiplier === "number") {
             actions.setSpeedMultiplier(stored.speedMultiplier);
@@ -147,10 +160,13 @@ const SimPage = () => {
       }
     }
 
+    const defaultModel = models.find((item) => item.id === "lin2dof") ?? models[0];
+    const defaultScenario = scenarios.find((item) => item.id === "const-radius") ?? scenarios[0];
     applyPreset({
-      modelId: models[0]?.id,
-      scenarioId: scenarios[0]?.id,
-      params: models[0]?.defaults,
+      modelId: defaultModel?.id,
+      scenarioId: defaultScenario?.id,
+      params: defaultModel?.defaults,
+      lateralUnit: "g",
     });
     initRef.current = true;
   }, [actions, form, models, presetParam, scenarios]);
@@ -249,6 +265,13 @@ const SimPage = () => {
     (multiplier: number) => {
       actions.setSpeedMultiplier(multiplier);
       workerRef.current?.postMessage({ type: "setSpeed", multiplier });
+    },
+    [actions]
+  );
+
+  const handleLateralUnitChange = useCallback(
+    (unit: "g" | "mps2") => {
+      actions.setLateralUnit(unit);
     },
     [actions]
   );
@@ -426,8 +449,8 @@ const SimPage = () => {
   const advancedContent = fieldGroups.advanced.map(renderField);
 
   const shareConfig = useMemo(
-    () => ({ modelId, scenarioId, params: watchedValues }),
-    [modelId, scenarioId, watchedValues]
+    () => ({ modelId, scenarioId, params: watchedValues, lateralUnit }),
+    [lateralUnit, modelId, scenarioId, watchedValues]
   );
 
   useEffect(() => {
@@ -440,12 +463,13 @@ const SimPage = () => {
         scenarioId,
         params: form.getValues(),
         speedMultiplier,
+        lateralUnit,
       };
       window.localStorage.setItem("vehicleLab:sandbox", JSON.stringify(snapshot));
     } catch (storageError) {
       console.warn("Failed to persist sandbox state", storageError);
     }
-  }, [form, modelId, scenarioId, speedMultiplier, watchedValues]);
+  }, [form, lateralUnit, modelId, scenarioId, speedMultiplier, watchedValues]);
 
   return (
     <div className="flex min-h-[calc(100vh-6rem)] flex-col bg-slate-100 dark:bg-slate-950">
@@ -461,6 +485,8 @@ const SimPage = () => {
         onToggleRun={toggleRun}
         onReset={handleReset}
         onSpeedChange={handleSpeedChange}
+        lateralUnit={lateralUnit}
+        onLateralUnitChange={handleLateralUnitChange}
         shareConfig={shareConfig}
         baselineBadge={{ status: baselinePending ? "running" : baselineStatus, onRun: handleBaselineRun }}
       />

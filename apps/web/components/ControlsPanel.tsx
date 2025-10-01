@@ -59,8 +59,8 @@ export function ControlsPanel({
         </div>
         <div role="radiogroup" aria-labelledby={`${baseId}-scenario`} className="flex gap-2">
           {([
-            { value: "skidpad", label: "Skidpad" },
-            { value: "lane-change", label: "Lane change" }
+            { value: "skidpad", label: "Skidpad", hint: "Constant-radius steering input for load transfer studies" },
+            { value: "lane-change", label: "Lane change", hint: "ISO double lane-change steering profile over the window" }
           ] as const).map((option) => {
             const isActive = manoeuvre === option.value;
             return (
@@ -70,6 +70,7 @@ export function ControlsPanel({
                 role="radio"
                 aria-checked={isActive}
                 data-active={isActive}
+                title={option.hint}
                 className={`${radioBaseClasses} ${radioActiveClasses} ${radioInactiveClasses}`}
                 onClick={() => {
                   if (!isActive) onScenarioChange(option.value);

@@ -15,6 +15,7 @@ type SimStoreState = {
   scenarioId: string;
   running: boolean;
   speedMultiplier: number;
+  lateralUnit: "g" | "mps2";
   telemetry: TelemetryBuffer;
   lastTelemetry: Telemetry | null;
   lastState: ModelState | null;
@@ -28,6 +29,7 @@ type SimStoreState = {
     setScenario: (scenarioId: string) => void;
     setRunning: (running: boolean) => void;
     setSpeedMultiplier: (multiplier: number) => void;
+    setLateralUnit: (unit: "g" | "mps2") => void;
     recordTick: (state: ModelState, telemetry: Telemetry) => void;
     addTelemetry: (samples: Telemetry | Telemetry[]) => void;
     clearTelemetry: () => void;
@@ -47,9 +49,9 @@ const clampTelemetry = (samples: Telemetry[]) => {
 const makeBuffer = (): TelemetryBuffer => ({ samples: [] });
 
 export const useSimStore = create<SimStoreState>((set) => ({
-  modelId: "unicycle",
+  modelId: "lin2dof",
   params: {},
-  scenarioId: "step-steer",
+  scenarioId: "const-radius",
   running: false,
   speedMultiplier: 1,
   telemetry: makeBuffer(),
@@ -81,6 +83,7 @@ export const useSimStore = create<SimStoreState>((set) => ({
     setRunning: (running) => set(() => ({ running })),
     setSpeedMultiplier: (multiplier) =>
       set(() => ({ speedMultiplier: Math.max(0.1, multiplier) })),
+    setLateralUnit: (unit) => set(() => ({ lateralUnit: unit })),
     recordTick: (stateValue, telemetry) =>
       set((current) => {
         const merged = clampTelemetry([...current.telemetry.samples, telemetry]);
