@@ -2,6 +2,7 @@ import Link from "next/link";
 import { compressToEncodedURIComponent } from "lz-string";
 
 import { Button } from "@/components/ui/button";
+import { TERMINOLOGY } from "@/src/constants/terminology";
 import { getModelDocs } from "@/lib/contentlayer";
 import { bootModels } from "@/lib/models";
 import { getModel } from "@/lib/sim/registry";
@@ -57,7 +58,7 @@ export default function ModelComparisonPage() {
     <div className="pb-20 pt-12">
       <div className="mx-auto w-full max-w-5xl px-4 sm:px-6 lg:px-0">
         <span className="text-xs font-semibold uppercase tracking-[0.3em] text-brand-600 dark:text-brand-300">
-          Model docs
+          {TERMINOLOGY.modelDocs}
         </span>
         <h1 className="mt-4 text-4xl font-semibold tracking-tight text-slate-900 dark:text-white">
           Model comparison
@@ -72,7 +73,7 @@ export default function ModelComparisonPage() {
             href="/docs/models"
             className="inline-flex items-center gap-1 rounded-full bg-slate-900 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-white transition hover:bg-slate-700 dark:bg-white dark:text-slate-900 dark:hover:bg-slate-200"
           >
-            Browse model pages
+            Browse {TERMINOLOGY.modelDocs}
           </Link>
         </div>
       </div>
@@ -119,7 +120,7 @@ export default function ModelComparisonPage() {
                   </div>
                   <div className="flex items-center">
                     <Button asChild variant="outline" className="w-full justify-center">
-                      <Link href={row.href}>Open in Sandbox</Link>
+                      <Link href={row.href}>Open {TERMINOLOGY.sandbox}</Link>
                     </Button>
                   </div>
                 </div>

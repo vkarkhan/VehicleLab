@@ -54,6 +54,7 @@ export const useSimStore = create<SimStoreState>((set) => ({
   scenarioId: "const-radius",
   running: false,
   speedMultiplier: 1,
+  lateralUnit: "g",
   telemetry: makeBuffer(),
   lastTelemetry: null,
   lastState: null,

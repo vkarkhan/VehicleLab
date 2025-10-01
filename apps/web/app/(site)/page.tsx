@@ -5,6 +5,7 @@ import { Card } from "@/components/Card";
 import { PingButton } from "@/components/ping-button";
 import { Section } from "@/components/Section";
 import { getBlogPosts, getGuides } from "@/lib/contentlayer";
+import { TERMINOLOGY } from "@/src/constants/terminology";
 
 const HeroVisual = dynamic(async () => {
   const mod = await import("@/components/hero-visual");
@@ -57,7 +58,7 @@ export default function HomePage() {
                 className="inline-flex items-center gap-1 text-sm font-semibold text-slate-600 transition hover:text-brand-600 dark:text-slate-300 dark:hover:text-brand-300"
               >
                 Read guides
-                <span aria-hidden>→</span>
+                <span aria-hidden>{"->"}</span>
               </Link>
             </div>
             <p className="text-sm font-medium text-slate-500 dark:text-slate-400">
@@ -86,12 +87,12 @@ export default function HomePage() {
       >
         <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
           <Card
-            eyebrow="Sandbox"
+            eyebrow={TERMINOLOGY.sandbox}
             title="Real-time vehicle dynamics"
             description="Manipulate mass, centre of gravity, and steering inputs in a tactile WebGL playground."
           />
           <Card
-            eyebrow="Telemetry"
+            eyebrow={TERMINOLOGY.telemetry}
             title="Charts that matter"
             description="Lateral acceleration, yaw rate, and slip angles sampled at 20 Hz to mirror track data."
           />
@@ -167,3 +168,4 @@ export default function HomePage() {
     </div>
   );
 }
+
