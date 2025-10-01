@@ -35,7 +35,7 @@ const capabilityCards = [
     title: "Virtual instrumentation",
     tag: "Visual overlays",
     description:
-      "Overlay instrumentation styled after MathWorks blocks to understand forces and balance in context.",
+      "Overlay instrumentation shaped by VehicleLab's instrumentation suite to understand forces and balance in context.",
     points: ["Force arrows and tyre footprints", "Slip angle breakdown by axle", "Front/rear load distribution bars"],
     icon: Layers
   },
@@ -67,7 +67,7 @@ const workflowSteps = [
 export const metadata: Metadata = {
   title: "VehicleLab Sandbox",
   description:
-    "MathWorks-inspired interactive 3D vehicle dynamics sandbox with telemetry, validation workflows, and export-ready reporting."
+    "VehicleLab-native interactive 3D vehicle dynamics sandbox with telemetry, validation workflows, and export-ready reporting."
 };
 
 interface VehicleLabPageProps {
@@ -89,10 +89,10 @@ export default function VehicleLabPage({ searchParams }: VehicleLabPageProps) {
           <div className="mt-8 grid gap-12 lg:grid-cols-[minmax(0,1fr)_360px] lg:items-center">
             <div className="space-y-6">
               <h1 className="text-4xl font-semibold tracking-tight sm:text-5xl">
-                MathWorks-inspired vehicle dynamics sandbox
+                VehicleLab-native vehicle dynamics sandbox
               </h1>
               <p className="max-w-2xl text-lg text-white/80">
-                Bring the polish of the Vehicle Dynamics Blockset landing experience into the VehicleLab sandbox. Lead
+                Bring the polish of the VehicleLab launch experience into the VehicleLab sandbox. Lead
                 with a bold hero, decisive CTAs, and supporting stats that frame the simulation canvas.
               </p>
               <div className="flex flex-wrap items-center gap-3">
@@ -132,7 +132,7 @@ export default function VehicleLabPage({ searchParams }: VehicleLabPageProps) {
                 <li>Live lateral acceleration with unit switching</li>
               </ul>
               <div className="mt-auto rounded-2xl bg-gradient-to-r from-sky-400 to-cyan-300 px-4 py-3 text-sm font-semibold text-slate-900 shadow-lg">
-                Styled to echo the MathWorks reference application cards.
+                Styled to echo the VehicleLab reference application cards.
               </div>
             </div>
           </div>
@@ -145,7 +145,7 @@ export default function VehicleLabPage({ searchParams }: VehicleLabPageProps) {
             Reference applications reinterpreted
           </h2>
           <p className="text-base text-slate-600 dark:text-slate-300">
-            Borrow MathWorks&apos; rhythm of feature bands with cards that explain what the sandbox offers before users
+            Carry VehicleLab&apos;s rhythm of feature bands with cards that explain what the sandbox offers before users
             dive into controls.
           </p>
         </div>
@@ -184,7 +184,7 @@ export default function VehicleLabPage({ searchParams }: VehicleLabPageProps) {
           <div className="mb-8 max-w-2xl space-y-3">
             <h2 className="text-2xl font-semibold tracking-tight text-slate-900 dark:text-white">Workflow at a glance</h2>
             <p className="text-base text-slate-600 dark:text-slate-300">
-              Echo the MathWorks blockset story by laying out how users configure, simulate, and review within
+              Echo the VehicleLab workflow story by laying out how users configure, simulate, and review within
               VehicleLab.
             </p>
           </div>
@@ -209,7 +209,7 @@ export default function VehicleLabPage({ searchParams }: VehicleLabPageProps) {
         <div className="mb-8 max-w-3xl space-y-3">
           <h2 className="text-2xl font-semibold tracking-tight text-slate-900 dark:text-white">Interactive sandbox</h2>
           <p className="text-base text-slate-600 dark:text-slate-300">
-            Launch the MathWorks-inspired experience - controls, metrics, and validation presented with confident cards
+            Launch the VehicleLab experience - controls, metrics, and validation presented with confident cards
             and deliberate typographic hierarchy.
           </p>
         </div>
