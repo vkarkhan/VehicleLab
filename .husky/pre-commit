@@ -1,15 +1,13 @@
 #!/bin/sh
 set -e
 
-STAGED_FILES=
-
-if printf '%s' "" | grep -qiE '\.env'; then
-  echo "\033[31m✖ Refusing to commit environment files (.env*)\033[0m" >&2
+if git diff --cached --name-only | grep -qiE '\.(env|env\.)'; then
+  echo "[31m✖ Refusing to commit environment files (.env*)[0m" >&2
   exit 1
 fi
 
 if git diff --cached --color=never | grep -Ei 'AWS_SECRET|API_KEY|BEGIN RSA|PRIVATE KEY|NEXTAUTH_SECRET'; then
-  echo "\033[31m✖ Potential secret detected in staged changes\033[0m" >&2
+  echo "[31m✖ Potential secret detected in staged changes[0m" >&2
   exit 1
 fi
 
