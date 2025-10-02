@@ -1,4 +1,9 @@
 import type { SandboxState } from "@/lib/stateSchema";
+import { computeSlipAndForces } from "@/lib/vehicle/slipAndForces";
+import { clampLateralForces } from "@/lib/vehicle/frictionClamp";
+import { computeAy } from "@/lib/vehicle/ayYaw";
+import { createVehicleParams } from "@/lib/vehicle/params";
+import { computeUndersteerGradient } from "@/lib/vehicle/understeer";
 import { clamp, roundTo } from "@/lib/utils";
 
 const G = 9.81;
@@ -74,38 +79,65 @@ function computeCorneringStiffness(load: number, grip: number, factor: number) {
   return grip * load * factor;
 }
 
-function saturateLateralForce(force: number, mu: number, load: number) {
-  const limit = mu * load;
-  return clamp(force, -limit, limit);
-}
-
 export function stepBicycleModel(
   state: VehicleState,
   inputs: VehicleInputs,
   params: VehicleParameters,
   dt: number
 ) {
-  const { mass, wheelbase, frontWeightDistribution, tyreGrip, corneringStiffnessFactor, cgHeight } = params;
-  const speed = Math.max(inputs.speed, 0.1);
+  const {
+    mass,
+    wheelbase,
+    frontWeightDistribution,
+    tyreGrip,
+    corneringStiffnessFactor,
+    cgHeight,
+  } = params;
+  const speed = Math.max(inputs.speed, 0.5);
 
   const a = frontWeightDistribution * wheelbase;
   const b = wheelbase - a;
   const inertia = mass * (a * a + b * b);
 
-  const FzfStatic = mass * G * frontWeightDistribution;
-  const FzrStatic = mass * G * (1 - frontWeightDistribution);
+  const staticFront = mass * G * frontWeightDistribution;
+  const staticRear = mass * G * (1 - frontWeightDistribution);
 
-  const Cf = computeCorneringStiffness(FzfStatic, tyreGrip, corneringStiffnessFactor);
-  const Cr = computeCorneringStiffness(FzrStatic, tyreGrip, corneringStiffnessFactor * 1.05);
+  const Cf = computeCorneringStiffness(staticFront, tyreGrip, corneringStiffnessFactor);
+  const Cr = computeCorneringStiffness(staticRear, tyreGrip, corneringStiffnessFactor * 1.05);
 
-  const alphaFront = inputs.steeringAngle - (state.lateralVelocity + a * state.yawRate) / speed;
-  const alphaRear = -(state.lateralVelocity - b * state.yawRate) / speed;
+  const slip = computeSlipAndForces(
+    {
+      vy: state.lateralVelocity,
+      r: state.yawRate,
+      vx: speed,
+      a,
+      b,
+      steer: inputs.steeringAngle,
+    },
+    { Cf, Cr }
+  );
 
-  const FyFrontLinear = -Cf * alphaFront;
-  const FyRearLinear = -Cr * alphaRear;
+  const vehicle = createVehicleParams({
+    m: mass,
+    Iz: inertia,
+    a,
+    b,
+    Cf,
+    Cr,
+    mu: tyreGrip,
+    track: TRACK_WIDTH,
+    hCg: cgHeight,
+    g: G,
+  });
 
-  const FyFront = saturateLateralForce(FyFrontLinear, tyreGrip, FzfStatic);
-  const FyRear = saturateLateralForce(FyRearLinear, tyreGrip, FzrStatic);
+  const clampResult = clampLateralForces({
+    FyFront: slip.forces.front,
+    FyRear: slip.forces.rear,
+    params: vehicle,
+  });
+
+  const FyFront = clampResult.front;
+  const FyRear = clampResult.rear;
 
   const yawAccel = (a * FyFront - b * FyRear) / inertia;
   const lateralAccel = (FyFront + FyRear) / mass - state.yawRate * speed;
@@ -113,26 +145,26 @@ export function stepBicycleModel(
   const newYawRate = state.yawRate + yawAccel * dt;
   const newLateralVelocity = state.lateralVelocity + lateralAccel * dt;
 
-  const ay = newYawRate * speed + lateralAccel;
-  const slip = Math.atan2(newLateralVelocity, speed);
+  const ay = computeAy(speed, newYawRate, lateralAccel);
+  const slipAngle = Math.atan2(newLateralVelocity, speed);
 
   const weightTransfer = (mass * ay * cgHeight) / TRACK_WIDTH;
-  const frontLoad = clamp(FzfStatic + weightTransfer * (a / wheelbase), 0, mass * G);
-  const rearLoad = clamp(FzrStatic - weightTransfer * (a / wheelbase), 0, mass * G);
+  const frontLoad = clamp(staticFront + weightTransfer * (a / wheelbase), 0, mass * G);
+  const rearLoad = clamp(staticRear - weightTransfer * (a / wheelbase), 0, mass * G);
   const totalLoad = frontLoad + rearLoad || mass * G;
   const frontLoadPercent = roundTo((frontLoad / totalLoad) * 100, 1);
   const rearLoadPercent = roundTo(100 - frontLoadPercent, 1);
 
-  const frontUtilization = Math.min(Math.abs(FyFront) / (tyreGrip * Math.max(frontLoad, 1)), 1);
-  const rearUtilization = Math.min(Math.abs(FyRear) / (tyreGrip * Math.max(rearLoad, 1)), 1);
-  const understeerGradient = (mass * (b / Cr - a / Cf)) / (mass * G);
+  const frontUtilization = Math.min(Math.abs(FyFront) / (Math.max(tyreGrip * Math.max(frontLoad, 1), 1e-6)), 1);
+  const rearUtilization = Math.min(Math.abs(FyRear) / (Math.max(tyreGrip * Math.max(rearLoad, 1), 1e-6)), 1);
+  const understeerGradient = computeUndersteerGradient(vehicle);
 
   const telemetry: VehicleTelemetry = {
     yawRate: newYawRate,
     lateralAcceleration: ay,
-    slipAngle: slip,
-    frontSlipAngle: alphaFront,
-    rearSlipAngle: alphaRear,
+    slipAngle,
+    frontSlipAngle: slip.angles.front,
+    rearSlipAngle: slip.angles.rear,
     frontLoad,
     rearLoad,
     frontLoadPercent,
@@ -144,25 +176,25 @@ export function stepBicycleModel(
     lateralVelocity: newLateralVelocity,
     longitudinalSpeed: speed,
     understeerGradient,
-    steeringAngle: inputs.steeringAngle
+    steeringAngle: inputs.steeringAngle,
   };
 
   const sample: SimulationSample = {
     time: 0,
     yawRate: newYawRate,
     lateralAcceleration: ay,
-    slipAngle: slip,
-    frontSlipAngle: alphaFront,
-    rearSlipAngle: alphaRear
+    slipAngle,
+    frontSlipAngle: slip.angles.front,
+    rearSlipAngle: slip.angles.rear,
   };
 
   return {
     state: {
       yawRate: newYawRate,
-      lateralVelocity: newLateralVelocity
+      lateralVelocity: newLateralVelocity,
     },
     telemetry,
-    sample
+    sample,
   };
 }
 
@@ -190,4 +222,3 @@ export function steeringForState(state: SandboxState, time: number) {
 export function speedToMetersPerSecond(speedKmH: number) {
   return speedKmH / 3.6;
 }
-
