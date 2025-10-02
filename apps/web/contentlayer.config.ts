@@ -79,6 +79,27 @@ export const ModelDoc = defineDocumentType(() => ({
   }
 }));
 
+export const TestDoc = defineDocumentType(() => ({
+  name: "TestDoc",
+  filePathPattern: "tests/*.mdx",
+  contentType: "mdx",
+  fields: {
+    title: { type: "string", required: true },
+    description: { type: "string", required: true },
+    order: { type: "number" },
+  },
+  computedFields: {
+    slug: {
+      type: "string",
+      resolve: (doc) => doc._raw.sourceFileName.replace(/\.mdx$/, ""),
+    },
+    slugAsParams: {
+      type: "string",
+      resolve: (doc) => doc._raw.flattenedPath.replace(/^tests\//, ""),
+    },
+  },
+}));
+
 export const Profile = defineDocumentType(() => ({
   name: "Profile",
   filePathPattern: `profile.json`,
@@ -94,7 +115,7 @@ export const Profile = defineDocumentType(() => ({
 
 export default makeSource({
   contentDirPath: "content",
-  documentTypes: [Guide, BlogPost, ModelDoc, Profile],
+  documentTypes: [Guide, BlogPost, ModelDoc, TestDoc, Profile],
   mdx: {
     remarkPlugins: [[remarkMath, {}], remarkGfm],
     rehypePlugins: [rehypeSlug, rehypeKatex, [rehypeAutolinkHeadings, { behavior: "wrap" }]]

@@ -1,0 +1,32 @@
+---
+title: "Ramp to limit"
+description: "Slow steering ramp to characterise linear slope and the friction envelope."
+order: 5
+---
+
+## Setup
+
+- Apply a slow, monotonic steering ramp (\(\dot{\delta} \approx 0.1\,\text{rad/s}\)) from zero until the vehicle saturates.
+- Maintain constant speed $v$ and record until lateral acceleration flattens at $\mu g$.
+- Enable the friction clamp to keep axle forces bounded when comparing to tyre data.
+
+## Theory
+
+- Initial linear slope: $\frac{a_y}{\delta} \approx v \cdot K_{r\delta}$.
+- Friction-limited lateral acceleration: $a_{y,\max} = \mu g$.
+- Steer angle at limit: $\delta_\mu \approx \delta_{ss} + U \frac{\mu g}{v}$.
+
+## Tolerances
+
+- Linear-region slope within $10\%$ of theory.
+- Peak lateral acceleration within $\pm 0.05 g$ of $\mu g$.
+- Steer angle at saturation within $0.05\,\text{rad}$ of $\delta_\mu$.
+
+## Open in sandbox
+
+[Launch ramp-to-limit reference test](/sim#reference-test-ramp-limit)
+
+## Limitations
+
+- Requires gradual inputs; fast ramps add dynamic lag and overshoot.
+- Results depend on friction coefficient $\mu$ supplied with the model params.

@@ -1,0 +1,40 @@
+---
+title: "Step-steer"
+description: "Transient yaw-rate response to a small steering step."
+order: 3
+---
+
+## Setup
+
+- Apply a small steering input $\delta_0$ at time $t=0$ while holding speed $v$ constant.
+- Ensure $\delta_0 \le 5^\circ$ to remain in the linear region.
+- Record yaw rate $r$ and lateral acceleration $a_y$ until the response settles.
+
+## Theory
+
+The linear bicycle produces a second-order yaw-rate transfer function with DC gain:
+
+$$K_{r\delta} = \frac{r_{\infty}}{\delta_0} = \frac{C_f}{m v}\left(1 + \frac{a}{b}\frac{C_f}{C_r}\right)^{-1}$$
+
+Natural frequency and damping ratio:
+
+$$\omega_n = \sqrt{\frac{C_f + C_r}{m v}}\sqrt{\frac{a^2 C_f + b^2 C_r}{I_z}} \qquad \zeta = \frac{1}{2 \omega_n}\left(\frac{C_f + C_r}{m v} + \frac{a^2 C_f + b^2 C_r}{I_z v}\right)$$
+
+Step response yaw rate and lateral acceleration follow the standard second-order form.
+
+Settling time $T_s \approx 4/(\zeta \omega_n)$ and percent overshoot $M_p = e^{-\pi \zeta/\sqrt{1 - \zeta^2}}$ for $\zeta < 1$.
+
+## Tolerances
+
+- $\left|r_{\infty,\text{sim}} - K_{r\delta}\delta_0\right| \le 5\%$
+- Measured settling time within $\pm 15\%$ of $4/(\zeta\omega_n)$.
+- Overshoot error $\le 20\%$ when $\zeta < 1$.
+
+## Open in sandbox
+
+[Launch step-steer reference test](/sim#reference-test-step-steer)
+
+## Limitations
+
+- Ignores tyre saturation and steering compliance; keep inputs small.
+- With friction clamp enabled the system becomes nonlinear and overshoot predictions will diverge.

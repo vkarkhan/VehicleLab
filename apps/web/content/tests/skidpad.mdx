@@ -1,0 +1,42 @@
+---
+title: "Skidpad"
+description: "Steady-state circular motion for validating small-angle linear bicycle behaviour."
+order: 2
+---
+
+## Setup
+
+- Maintain constant forward speed $v$ on a circular path of radius $R$.
+- Use small steering excursions so that $\left|\alpha_f\right|, \left|\alpha_r\right| \lt 6^\circ$.
+- Enable the friction clamp when comparing against non-linear tyre data; otherwise leave it off for pure linear validation.
+- Recommended defaults: $v = 22\,\text{m/s}$, $R = 30\,\text{m}$, duration $\ge 15\,\text{s}$.
+
+## Theory
+
+For the linear bicycle:
+
+$$r = \frac{v}{R}, \qquad a_y = \frac{v^2}{R}$$
+
+Understeer gradient $U$:
+
+$$U = \frac{W_f}{C_f} - \frac{W_r}{C_r} \qquad [\text{rad}/g]$$
+
+Steady-state steer angle including understeer:
+
+$$\delta_{ss} = \frac{L}{R} + U \frac{v^2}{gR}$$
+
+## Tolerances
+
+- $\left|r_{\text{sim}} - r_{\text{theory}}\right|/r_{\text{theory}} \le 5\%$
+- $\left|a_{y,\text{sim}} - a_{y,\text{theory}}\right|/a_{y,\text{theory}} \le 5\%$
+- $\left|\delta_{\text{sim}} - \delta_{ss}\right| \le 0.05\,\text{rad}$ (relaxed to $0.08\,\text{rad}$ when friction limited)
+
+## Open in sandbox
+
+[Launch skidpad reference test](/sim#reference-test-skidpad)
+
+## Limitations
+
+- Assumes constant speed and a flat surface with negligible banking.
+- Linear tyre model accuracy degrades for large slip angles; respect the 6° guidance.
+- When the friction clamp is active, expect higher steer angles and loosened tolerances.
