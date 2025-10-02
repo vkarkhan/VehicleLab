@@ -1,0 +1,116 @@
+0000	2d 2d 2d 0a 74 69 74 6c  65 3a 20 22 4b 69 6e 65   ---.title: "Kine
+0010	6d 61 74 69 63 20 55 6e  69 63 79 63 6c 65 22 0a   matic Unicycle".
+0020	64 65 73 63 72 69 70 74  69 6f 6e 3a 20 22 50 6f   description: "Po
+0030	69 6e 74 2d 6d 61 73 73  20 68 65 61 64 69 6e 67   int-mass heading
+0040	20 69 6e 74 65 67 72 61  74 69 6f 6e 20 77 69 74    integration wit
+0050	68 20 61 20 63 75 72 76  61 74 75 72 65 2d 63 6f   h a curvature-co
+0060	6e 74 72 6f 6c 6c 65 64  20 73 74 65 65 72 20 69   ntrolled steer i
+0070	6e 70 75 74 2e 22 0a 6d  6f 64 65 6c 49 64 3a 20   nput.".modelId: 
+0080	22 75 6e 69 63 79 63 6c  65 22 0a 73 63 65 6e 61   "unicycle".scena
+0090	72 69 6f 49 64 3a 20 22  63 6f 6e 73 74 2d 72 61   rioId: "const-ra
+00a0	64 69 75 73 22 0a 6f 72  64 65 72 3a 20 31 0a 2d   dius".order: 1.-
+00b0	2d 2d 0a 0a 23 23 20 41  74 20 61 20 67 6c 61 6e   --..## At a glan
+00c0	63 65 0a 0a 2d 20 49 64  65 61 6c 69 7a 65 64 20   ce..- Idealized 
+00d0	70 6f 69 6e 74 2d 6d 61  73 73 20 77 69 74 68 20   point-mass with 
+00e0	61 20 73 69 6e 67 6c 65  20 79 61 77 20 44 4f 46   a single yaw DOF
+00f0	20 2d 2d 20 70 65 72 66  65 63 74 20 66 6f 72 20    -- perfect for 
+0100	66 61 73 74 20 73 61 6e  64 62 6f 78 20 70 72 6f   fast sandbox pro
+0110	74 6f 74 79 70 69 6e 67  2e 0a 2d 20 49 67 6e 6f   totyping..- Igno
+0120	72 65 73 20 6c 61 74 65  72 61 6c 20 73 6c 69 70   res lateral slip
+0130	20 61 6e 64 20 74 79 72  65 20 6c 6f 61 64 20 74    and tyre load t
+0140	72 61 6e 73 66 65 72 2c  20 73 6f 20 69 74 20 73   ransfer, so it s
+0150	74 61 79 73 20 73 74 61  62 6c 65 20 65 76 65 6e   tays stable even
+0160	20 61 74 20 75 6e 72 65  61 6c 69 73 74 69 63 20    at unrealistic 
+0170	73 70 65 65 64 73 2e 0a  2d 20 42 65 73 74 20 75   speeds..- Best u
+0180	73 65 64 20 66 6f 72 20  6c 61 79 6f 75 74 20 70   sed for layout p
+0190	6c 61 6e 6e 69 6e 67 2c  20 61 6e 69 6d 61 74 69   lanning, animati
+01a0	6f 6e 20 62 6c 6f 63 6b  69 6e 67 2c 20 61 6e 64   on blocking, and
+01b0	20 63 6f 6e 74 72 6f 6c  6c 65 72 20 73 6b 65 74    controller sket
+01c0	63 68 65 73 20 77 68 65  72 65 20 74 79 72 65 20   ches where tyre 
+01d0	6c 69 6d 69 74 73 20 61  72 65 20 73 65 63 6f 6e   limits are secon
+01e0	64 61 72 79 2e 0a 2d 20  4c 69 67 68 74 77 65 69   dary..- Lightwei
+01f0	67 68 74 20 65 6e 6f 75  67 68 20 74 6f 20 72 75   ght enough to ru
+0200	6e 20 74 68 6f 75 73 61  6e 64 73 20 6f 66 20 74   n thousands of t
+0210	72 61 6a 65 63 74 6f 72  69 65 73 20 66 6f 72 20   rajectories for 
+0220	4d 6f 6e 74 65 2d 43 61  72 6c 6f 20 73 74 75 64   Monte-Carlo stud
+0230	69 65 73 2e 0a 0a 23 23  20 45 71 75 61 74 69 6f   ies...## Equatio
+0240	6e 73 0a 0a 54 68 65 20  73 74 61 74 65 20 69 73   ns..The state is
+0250	20 24 78 2c 20 79 2c 20  5c 70 73 69 24 20 77 69    $x, y, \psi$ wi
+0260	74 68 20 61 20 63 6f 6e  73 74 61 6e 74 20 66 6f   th a constant fo
+0270	72 77 61 72 64 20 73 70  65 65 64 20 24 76 24 2e   rward speed $v$.
+0280	20 53 74 65 65 72 69 6e  67 20 69 73 20 65 78 70    Steering is exp
+0290	72 65 73 73 65 64 20 61  73 20 63 75 72 76 61 74   ressed as curvat
+02a0	75 72 65 20 76 69 61 20  61 6e 20 65 66 66 65 63   ure via an effec
+02b0	74 69 76 65 20 77 68 65  65 6c 62 61 73 65 20 24   tive wheelbase $
+02c0	4c 5f 7b 09 65 78 74 7b  65 66 66 7d 7d 24 2e 0a   L_{.ext{eff}}$..
+02d0	0a 24 24 0a 5c 64 6f 74  7b 78 7d 20 3d 20 76 20   .$$.\dot{x} = v 
+02e0	5c 63 6f 73 20 5c 70 73  69 0a 5c 71 71 75 61 64   \cos \psi.\qquad
+02f0	0a 5c 64 6f 74 7b 79 7d  20 3d 20 76 20 5c 73 69   .\dot{y} = v \si
+0300	6e 20 5c 70 73 69 0a 5c  71 71 75 61 64 0a 5c 64   n \psi.\qquad.\d
+0310	6f 74 7b 5c 70 73 69 7d  20 3d 20 0c 72 61 63 7b   ot{\psi} = .rac{
+0320	76 7d 7b 4c 5f 7b 09 65  78 74 7b 65 66 66 7d 7d   v}{L_{.ext{eff}}
+0330	7d 20 09 61 6e 20 5c 64  65 6c 74 61 0a 24 24 0a   } .an \delta.$$.
+0340	0a 49 6d 70 6c 65 6d 65  6e 74 65 64 20 69 6e 74   .Implemented int
+0350	65 67 72 61 74 6f 72 73  3a 0a 0a 2d 20 2a 2a 73   egrators:..- **s
+0360	65 6d 69 49 6d 70 6c 69  63 69 74 45 75 6c 65 72   emiImplicitEuler
+0370	2a 2a 20 2d 2d 20 66 61  73 74 2c 20 66 69 72 73   ** -- fast, firs
+0380	74 20 6f 72 64 65 72 2e  0a 2d 20 2a 2a 72 6b 34   t order..- **rk4
+0390	2a 2a 20 2d 2d 20 73 74  61 62 6c 65 20 66 6f 75   ** -- stable fou
+03a0	72 74 68 2d 6f 72 64 65  72 20 52 75 6e 67 65 2d   rth-order Runge-
+03b0	4b 75 74 74 61 20 66 6f  72 20 73 6d 6f 6f 74 68   Kutta for smooth
+03c0	20 74 72 61 6a 65 63 74  6f 72 69 65 73 2e 0a 0a    trajectories...
+03d0	23 23 20 50 61 72 61 6d  65 74 65 72 73 20 26 20   ## Parameters & 
+03e0	75 6e 69 74 73 0a 0a 7c  20 50 61 72 61 6d 65 74   units..| Paramet
+03f0	65 72 20 7c 20 44 65 73  63 72 69 70 74 69 6f 6e   er | Description
+0400	20 7c 20 54 79 70 69 63  61 6c 20 72 61 6e 67 65    | Typical range
+0410	20 7c 0a 7c 20 2d 2d 2d  20 7c 20 2d 2d 2d 20 7c    |.| --- | --- |
+0420	20 2d 2d 2d 20 7c 0a 7c  20 76 20 5b 6d 2f 73 5d    --- |.| v [m/s]
+0430	20 7c 20 46 6f 72 77 61  72 64 20 73 70 65 65 64    | Forward speed
+0440	20 7c 20 30 20 2d 20 36  30 20 7c 0a 7c 20 4c 5f    | 0 - 60 |.| L_
+0450	65 66 66 20 5b 6d 5d 20  7c 20 45 66 66 65 63 74   eff [m] | Effect
+0460	69 76 65 20 77 68 65 65  6c 62 61 73 65 20 7c 20   ive wheelbase | 
+0470	32 2e 34 20 2d 20 33 2e  32 20 7c 0a 7c 20 64 74   2.4 - 3.2 |.| dt
+0480	20 5b 73 5d 20 7c 20 53  69 6d 75 6c 61 74 69 6f    [s] | Simulatio
+0490	6e 20 73 74 65 70 20 73  69 7a 65 20 7c 20 30 2e   n step size | 0.
+04a0	30 30 35 20 2d 20 30 2e  30 32 20 7c 0a 7c 20 70   005 - 0.02 |.| p
+04b0	72 6f 63 65 73 73 4e 6f  69 73 65 20 7c 20 54 6f   rocessNoise | To
+04c0	67 67 6c 65 20 61 64 64  69 74 69 76 65 20 6e 6f   ggle additive no
+04d0	69 73 65 20 7c 20 6f 66  66 20 2f 20 6f 6e 20 7c   ise | off / on |
+04e0	0a 0a 23 23 20 41 73 73  75 6d 70 74 69 6f 6e 73   ..## Assumptions
+04f0	20 26 20 6c 69 6d 69 74  73 0a 0a 2d 20 4e 6f 20    & limits..- No 
+0500	74 79 72 65 20 73 6c 69  70 20 6f 72 20 6c 61 74   tyre slip or lat
+0510	65 72 61 6c 20 64 79 6e  61 6d 69 63 73 3b 20 74   eral dynamics; t
+0520	68 65 20 70 61 74 68 20  69 73 20 65 78 61 63 74   he path is exact
+0530	6c 79 20 63 75 72 76 61  74 75 72 65 2d 64 72 69   ly curvature-dri
+0540	76 65 6e 2e 0a 2d 20 47  72 61 76 69 74 79 2c 20   ven..- Gravity, 
+0550	6c 6f 61 64 20 74 72 61  6e 73 66 65 72 2c 20 61   load transfer, a
+0560	6e 64 20 61 63 63 65 6c  65 72 61 74 69 6f 6e 20   nd acceleration 
+0570	6c 69 6d 69 74 73 20 61  72 65 20 69 67 6e 6f 72   limits are ignor
+0580	65 64 2e 0a 2d 20 53 75  69 74 61 62 6c 65 20 6f   ed..- Suitable o
+0590	6e 6c 79 20 66 6f 72 20  6c 6f 77 20 74 6f 20 6d   nly for low to m
+05a0	65 64 69 75 6d 20 66 69  64 65 6c 69 74 79 20 70   edium fidelity p
+05b0	72 65 76 69 65 77 73 20  2d 2d 20 6e 6f 74 20 63   reviews -- not c
+05c0	68 61 73 73 69 73 20 74  75 6e 69 6e 67 2e 0a 0a   hassis tuning...
+05d0	23 23 20 43 61 6e 6f 6e  69 63 61 6c 20 73 63 65   ## Canonical sce
+05e0	6e 61 72 69 6f 73 0a 0a  31 2e 20 2a 2a 43 6f 6e   narios..1. **Con
+05f0	73 74 61 6e 74 20 72 61  64 69 75 73 20 73 6b 69   stant radius ski
+0600	64 70 61 64 2a 2a 20 2d  2d 20 76 61 6c 69 64 61   dpad** -- valida
+0610	74 65 73 20 73 74 65 61  64 79 20 79 61 77 20 77   tes steady yaw w
+0620	69 74 68 20 6d 69 6e 69  6d 61 6c 20 64 72 69 66   ith minimal drif
+0630	74 2e 0a 32 2e 20 2a 2a  53 74 65 70 20 73 74 65   t..2. **Step ste
+0640	65 72 20 74 6f 20 68 65  61 64 69 6e 67 2a 2a 20   er to heading** 
+0650	2d 2d 20 65 78 70 6f 73  65 73 20 69 6e 74 65 67   -- exposes integ
+0660	72 61 74 6f 72 20 61 6e  64 20 74 69 6d 65 2d 73   rator and time-s
+0670	74 65 70 20 73 65 74 75  70 2e 0a 33 2e 20 2a 2a   tep setup..3. **
+0680	4e 6f 69 73 65 2d 69 6e  6a 65 63 74 65 64 20 70   Noise-injected p
+0690	61 74 72 6f 6c 2a 2a 20  2d 2d 20 65 6e 61 62 6c   atrol** -- enabl
+06a0	65 73 20 73 74 6f 63 68  61 73 74 69 63 20 73 74   es stochastic st
+06b0	72 65 73 73 20 74 65 73  74 69 6e 67 20 77 69 74   ress testing wit
+06c0	68 20 6e 6f 69 73 65 20  65 6e 61 62 6c 65 64 2e   h noise enabled.
+06d0	0a 0a 41 20 73 68 61 72  65 61 62 6c 65 20 73 61   ..A shareable sa
+06e0	6e 64 62 6f 78 20 70 72  65 73 65 74 20 69 73 20   ndbox preset is 
+06f0	70 72 6f 76 69 64 65 64  20 62 65 6c 6f 77 20 74   provided below t
+0700	6f 20 6a 75 6d 70 20 73  74 72 61 69 67 68 74 20   o jump straight 
+0710	69 6e 74 6f 20 74 68 65  20 63 69 72 63 75 6c 61   into the circula
+0720	72 2d 73 6b 69 64 70 61  64 20 62 61 73 65 6c 69   r-skidpad baseli
+0730	6e 65 20 72 75 6e 2e                               ne run.

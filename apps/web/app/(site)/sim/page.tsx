@@ -190,7 +190,7 @@ const SimPage = () => {
       if (typeof Worker !== "function") {
         return createFallback();
       }
-      const worker = new Worker(new URL("../../workers/simWorker.ts", import.meta.url));
+      const worker = new Worker(new URL("../../../workers/simWorker.ts", import.meta.url));
       workerRef.current = worker;
       setUsingFallback(false);
       worker.onmessage = (event: MessageEvent<SimWorkerResponse>) => {
