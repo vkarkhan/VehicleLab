@@ -1,7 +1,7 @@
 "use client";
 
 import dynamic from "next/dynamic";
-import { useCallback, useEffect, useMemo, useRef, useState, useTransition } from "react";
+import { Suspense, useCallback, useEffect, useMemo, useRef, useState, useTransition } from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Controller, useForm } from "react-hook-form";
 import { decompressFromEncodedURIComponent } from "lz-string";
@@ -32,7 +32,7 @@ const SimCanvas = dynamic(() => import("@/components/sim/SimCanvas").then((mod) 
   ),
 });
 
-const SimPage = () => {
+const SimPageContent = () => {
   const models = useMemo(() => listModels(), []);
   const scenarios = useMemo(() => listScenarioPresets(), []);
   const searchParams = useSearchParams();
@@ -548,5 +548,11 @@ const SimPage = () => {
     </div>
   );
 };
+
+const SimPage = () => (
+  <Suspense fallback={<div className="flex min-h-[calc(100vh-6rem)] items-center justify-center bg-slate-100 text-sm text-slate-500 dark:bg-slate-950 dark:text-slate-400">Loading sandbox...</div>}>
+    <SimPageContent />
+  </Suspense>
+);
 
 export default SimPage;

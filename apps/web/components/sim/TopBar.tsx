@@ -12,6 +12,7 @@ import type { ModelDef } from "@/lib/sim/core";
 import { useSimStore } from "@/lib/store/simStore";
 import { createVehicleParams } from "@/lib/vehicle/params";
 import { computeUndersteerGradient, steadyStateSteerAngle } from "@/lib/vehicle/understeer";
+import { TERMINOLOGY } from "@/src/constants/terminology";
 
 import type { ShareConfig } from "./ShareLink";
 import { ShareLink } from "./ShareLink";

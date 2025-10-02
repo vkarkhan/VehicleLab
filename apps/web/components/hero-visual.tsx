@@ -54,9 +54,10 @@ export function HeroVisual() {
     }
   }, [frame]);
 
-  const yawRate = frame?.telemetry?.r ?? FALLBACK_PLAYBACK[0].telemetry.r;
-  const lateralAcceleration = frame?.telemetry?.ay ?? FALLBACK_PLAYBACK[0].telemetry.ay;
-  const slip = frame?.telemetry?.beta ?? FALLBACK_PLAYBACK[0].telemetry.beta;
+  const fallbackTelemetry = FALLBACK_PLAYBACK[0]?.telemetry;
+  const yawRate = frame?.telemetry?.r ?? fallbackTelemetry?.r ?? 0;
+  const lateralAcceleration = frame?.telemetry?.ay ?? fallbackTelemetry?.ay ?? 0;
+  const slip = frame?.telemetry?.beta ?? fallbackTelemetry?.beta ?? 0;
   const yawText = `${(yawRate * 57.2958).toFixed(1)}°/s`;
   const ayText = `${(lateralAcceleration / 9.80665).toFixed(2)} g`;
   const slipText = `${(slip * 57.2958).toFixed(1)}°`;

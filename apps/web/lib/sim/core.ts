@@ -15,6 +15,8 @@ export type Telemetry = {
   r?: number;
   ay?: number;
   beta?: number;
+  frontSlipAngle?: number;
+  rearSlipAngle?: number;
   notes?: Record<string, number>;
 };
 
@@ -37,3 +39,5 @@ export type ModelDef<P extends ModelParams = ModelParams, S extends ModelState =
   };
   docsSlug: string;
 };
+
+
