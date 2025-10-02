@@ -51,6 +51,15 @@ export default function ModelDocPage({ params }: ModelDocPageProps) {
     JSON.stringify({ modelId: doc.modelId, scenarioId, params: defaults })
   );
   const sandboxHref = "/sim?p=" + payload;
+  const defaultIntegrator = (defaults as Record<string, unknown>).integrator ?? "rk4";
+  const defaultDt = (defaults as Record<string, unknown>).dt;
+
+  const canonicalTests = [
+    { slug: "skidpad", title: "Skidpad" },
+    { slug: "step-steer", title: "Step-steer" },
+    { slug: "frequency", title: "Frequency response" },
+    { slug: "ramp-limit", title: "Ramp to limit" },
+  ];
 
   return (
     <div className="pb-16 pt-12">
@@ -82,6 +91,36 @@ export default function ModelDocPage({ params }: ModelDocPageProps) {
           >
             Open in Sandbox
           </Link>
+        </div>
+        <div className="mt-6 rounded-2xl border border-slate-200 bg-white/80 p-4 text-sm text-slate-600 shadow-sm dark:border-slate-800 dark:bg-slate-900/70 dark:text-slate-300">
+          <div className="flex flex-col gap-2">
+            <div className="flex flex-wrap items-center gap-3 text-xs uppercase tracking-wide text-slate-500 dark:text-slate-400">
+              <span>Validated by canonical tests</span>
+              <span className="rounded-full bg-slate-200 px-2 py-0.5 text-[10px] font-semibold text-slate-700 dark:bg-slate-800 dark:text-slate-200">
+                Solver {String(defaultIntegrator)} · dt {typeof defaultDt === "number" ? defaultDt.toFixed(3) + " s" : "adaptive"}
+              </span>
+            </div>
+            <ul className="flex flex-wrap gap-2 text-xs">
+              {canonicalTests.map((test) => (
+                <li key={test.slug}>
+                  <Link
+                    href={"/docs/tests/" + test.slug}
+                    className="inline-flex items-center gap-1 rounded-full bg-slate-900 px-3 py-1 text-[0.65rem] font-semibold uppercase tracking-wide text-white transition hover:bg-slate-700 dark:bg-white dark:text-slate-900 dark:hover:bg-slate-200"
+                  >
+                    {test.title}
+                  </Link>
+                </li>
+              ))}
+              <li>
+                <Link
+                  href="/sim#reference-test-skidpad"
+                  className="inline-flex items-center gap-1 rounded-full border border-slate-200 px-3 py-1 text-[0.65rem] font-semibold uppercase tracking-wide text-slate-700 transition hover:bg-slate-100 dark:border-slate-700 dark:text-slate-200 dark:hover:bg-slate-800"
+                >
+                  Run panel
+                </Link>
+              </li>
+            </ul>
+          </div>
         </div>
       </div>
       <div className="mx-auto mt-12 w-full max-w-3xl px-4 sm:px-6 lg:px-0">

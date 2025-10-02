@@ -105,6 +105,15 @@ function overlayFromResult(result: CanonicalResult): PlotOverlayPayload | null {
   }
 }
 
+function collectTelemetry(result: CanonicalResult) {
+  if (result.id === "frequency") {
+    return result.result.runs.flatMap((run, runIndex) =>
+      run.telemetry.map((sample) => ({ ...sample, frequency: run.frequency, runIndex }))
+    );
+  }
+  return result.result.telemetry;
+}
+
 function downloadFile(filename: string, content: BlobPart, mimetype: string) {
   const blob = new Blob([content], { type: mimetype });
   const url = URL.createObjectURL(blob);
@@ -118,27 +127,34 @@ function downloadFile(filename: string, content: BlobPart, mimetype: string) {
 }
 
 function exportJSON(result: CanonicalResult) {
+  const telemetry = collectTelemetry(result);
   const payload = {
     id: result.id,
     config: result.config,
     metrics: result.result.metrics,
     grades: result.result.grades,
     flags: result.result.flags,
-    telemetry: result.result.telemetry,
+    telemetry,
     theory: result.result.theory,
   };
   downloadFile(result.id + "-canonical.json", JSON.stringify(payload, null, 2), "application/json");
 }
 
 function exportCSV(result: CanonicalResult) {
-  const telemetry = result.result.telemetry;
+  const telemetry = collectTelemetry(result);
   if (!telemetry.length) return;
   const headers = Object.keys(telemetry[0]);
   const lines = [headers.join(",")];
   telemetry.forEach((sample) => {
     const values = headers.map((key) => {
-      const value = (sample as Record<string, number | string | undefined>)[key];
-      return typeof value === "number" ? value.toFixed(6) : value || "";
+      const raw = (sample as Record<string, unknown>)[key];
+      if (typeof raw === "number") {
+        return raw.toFixed(6);
+      }
+      if (typeof raw === "boolean") {
+        return raw ? "true" : "false";
+      }
+      return raw ?? "";
     });
     lines.push(values.join(","));
   });
@@ -146,7 +162,7 @@ function exportCSV(result: CanonicalResult) {
 }
 
 function exportPNG(result: CanonicalResult) {
-  const telemetry = result.result.telemetry;
+  const telemetry = collectTelemetry(result);
   if (!telemetry.length) return;
   const canvas = document.createElement("canvas");
   canvas.width = 640;
