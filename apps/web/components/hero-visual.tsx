@@ -1,16 +1,65 @@
 "use client";
 
-import { useMemo } from "react";
+import { useEffect, useMemo } from "react";
+
+import { simStateBus, type SimStateFrame } from "@/lib/sim/stateBus";
+import { useSimStateFrame } from "@/lib/sim/useSimStateFrame";
+
+const FALLBACK_PLAYBACK: SimStateFrame[] = Array.from({ length: 160 }, (_, index) => {
+  const t = index * 0.05;
+  const yawRate = 0.35 * Math.sin(t * 1.1);
+  const ay = 3.6 * Math.sin(t * 1.1 + Math.PI / 6);
+  const psi = yawRate * 0.6;
+  const beta = 0.05 * Math.sin(t * 1.6);
+  return {
+    telemetry: {
+      t,
+      r: yawRate,
+      ay,
+      psi,
+      beta,
+    },
+    state: { r: yawRate, psi, vy: beta, x: Math.sin(t * 0.2) * 5, y: Math.cos(t * 0.2) * 5 } as Record<string, number>,
+    params: { v: 25 },
+    modelId: "lin2dof",
+    scenarioId: "const-radius",
+  };
+});
 
 function createGradientId(prefix: string) {
   return `${prefix}-${Math.random().toString(36).slice(2, 8)}`;
 }
 
 export function HeroVisual() {
+  const frame = useSimStateFrame();
+
   const { shineId, bodyId } = useMemo(() => ({
     shineId: createGradientId("hero-shine"),
     bodyId: createGradientId("hero-body")
   }), []);
+
+  useEffect(() => {
+    if (!frame) {
+      simStateBus.startPlayback(FALLBACK_PLAYBACK, 80);
+      return () => {
+        simStateBus.stopPlayback();
+      };
+    }
+    return undefined;
+  }, [frame]);
+
+  useEffect(() => {
+    if (frame) {
+      simStateBus.stopPlayback();
+    }
+  }, [frame]);
+
+  const yawRate = frame?.telemetry?.r ?? FALLBACK_PLAYBACK[0].telemetry.r;
+  const lateralAcceleration = frame?.telemetry?.ay ?? FALLBACK_PLAYBACK[0].telemetry.ay;
+  const slip = frame?.telemetry?.beta ?? FALLBACK_PLAYBACK[0].telemetry.beta;
+  const yawText = `${(yawRate * 57.2958).toFixed(1)}°/s`;
+  const ayText = `${(lateralAcceleration / 9.80665).toFixed(2)} g`;
+  const slipText = `${(slip * 57.2958).toFixed(1)}°`;
 
   return (
     <div className="hero-visual relative aspect-video w-full overflow-hidden rounded-[1.75rem] border border-slate-200/60 bg-white/[0.97] shadow-[0_42px_120px_-48px_rgba(79,70,229,0.65)] backdrop-blur-sm dark:border-white/10 dark:bg-slate-900/70">
@@ -82,9 +131,9 @@ export function HeroVisual() {
       </svg>
 
       <div className="hero-visual__hud" aria-hidden>
-        <span className="hero-visual__hud-pill">Yaw rate +2.1deg/s</span>
-        <span className="hero-visual__hud-pill">Slip angle 4.2deg</span>
-        <span className="hero-visual__hud-pill hero-visual__hud-pill--accent">Lateral accel 1.15 g</span>
+        <span className="hero-visual__hud-pill">Yaw rate {yawText}</span>
+        <span className="hero-visual__hud-pill">Slip angle {slipText}</span>
+        <span className="hero-visual__hud-pill hero-visual__hud-pill--accent">Lateral accel {ayText}</span>
       </div>
     </div>
   );

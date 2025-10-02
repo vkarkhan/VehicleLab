@@ -1,5 +1,6 @@
 import { create } from "zustand";
 import type { ModelParams, ModelState, Telemetry } from "../sim/core";
+import { simStateBus } from "../sim/stateBus";
 
 const TELEMETRY_LIMIT = 20000;
 
@@ -22,6 +23,12 @@ type SimStoreState = {
   error: string | null;
   baselineStatus: BaselineStatus;
   baselineMetrics: Record<string, number> | null;
+  overlays: {
+    label: string;
+    yawRate?: { label: string; data: { t: number; value: number }[] };
+    ay?: { label: string; data: { t: number; value: number }[] };
+    beta?: { label: string; data: { t: number; value: number }[] };
+  } | null;
   actions: {
     setModel: (modelId: string, params: ModelParams) => void;
     setParams: (params: ModelParams) => void;
@@ -36,6 +43,14 @@ type SimStoreState = {
     setBaselineStatus: (status: BaselineStatus) => void;
     setBaselineMetrics: (metrics: Record<string, number> | null) => void;
     setError: (message: string | null) => void;
+    setOverlay: (
+      overlay: {
+        label: string;
+        yawRate?: { label: string; data: { t: number; value: number }[] };
+        ay?: { label: string; data: { t: number; value: number }[] };
+        beta?: { label: string; data: { t: number; value: number }[] };
+      } | null
+    ) => void;
   };
 };
 
@@ -61,17 +76,21 @@ export const useSimStore = create<SimStoreState>((set) => ({
   error: null,
   baselineStatus: "idle",
   baselineMetrics: null,
+  overlays: null,
   actions: {
     setModel: (modelId, params) =>
-      set(() => ({
-        modelId,
-        params,
-        telemetry: makeBuffer(),
-        lastTelemetry: null,
-        lastState: null,
-        baselineStatus: "idle",
-        baselineMetrics: null,
-      })),
+      set(() => {
+        simStateBus.stopPlayback();
+        return {
+          modelId,
+          params,
+          telemetry: makeBuffer(),
+          lastTelemetry: null,
+          lastState: null,
+          baselineStatus: "idle",
+          baselineMetrics: null,
+        };
+      }),
     setParams: (params) => set(() => ({ params, baselineStatus: "idle", baselineMetrics: null })),
     mergeParams: (params) =>
       set((state) => ({
@@ -87,6 +106,13 @@ export const useSimStore = create<SimStoreState>((set) => ({
     setLateralUnit: (unit) => set(() => ({ lateralUnit: unit })),
     recordTick: (stateValue, telemetry) =>
       set((current) => {
+        simStateBus.publish({
+          telemetry,
+          state: stateValue,
+          modelId: current.modelId,
+          scenarioId: current.scenarioId,
+          params: current.params,
+        });
         const merged = clampTelemetry([...current.telemetry.samples, telemetry]);
         return {
           lastState: stateValue,
@@ -110,5 +136,6 @@ export const useSimStore = create<SimStoreState>((set) => ({
     setBaselineStatus: (status) => set(() => ({ baselineStatus: status })),
     setBaselineMetrics: (metrics) => set(() => ({ baselineMetrics: metrics })),
     setError: (message) => set(() => ({ error: message })),
+    setOverlay: (overlay) => set(() => ({ overlays: overlay })),
   },
 }));
