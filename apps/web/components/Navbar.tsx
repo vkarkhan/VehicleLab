@@ -4,9 +4,10 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 
 import { ThemeToggle } from "@/components/ThemeToggle";
+import { TERMINOLOGY } from "@/src/constants/terminology";
 
 const links = [
-  { href: "/vehicellab", label: "Sandbox" },
+  { href: "/vehicellab", label: TERMINOLOGY.sandbox },
   { href: "/guides", label: "Guides" },
   { href: "/blog", label: "Blog" },
   { href: "/pricing", label: "Pricing" },
@@ -26,7 +27,7 @@ export function Navbar() {
           <span className="rounded-full bg-brand-500/10 px-2 py-1 text-xs font-medium uppercase text-brand-600 dark:text-brand-300">
             VehicleLab
           </span>
-          <span className="hidden sm:block">Vehicle Dynamics Sandbox</span>
+          <span className="hidden sm:block">Vehicle Dynamics {TERMINOLOGY.sandbox}</span>
         </Link>
         <nav className="hidden items-center gap-2 md:flex">
           {links.map((link) => {

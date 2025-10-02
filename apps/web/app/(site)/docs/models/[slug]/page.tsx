@@ -62,6 +62,15 @@ export default function ModelDocPage({ params }: ModelDocPageProps) {
           {doc.title}
         </h1>
         <p className="mt-3 text-lg text-slate-600 dark:text-slate-300">{doc.description}</p>
+        <div className="mt-4 inline-flex items-center gap-2 text-xs uppercase tracking-wide text-slate-500 dark:text-slate-400">
+          <span>Want to benchmark against another model?</span>
+          <Link
+            href="/docs/models/comparison"
+            className="inline-flex items-center gap-1 rounded-full bg-slate-900 px-3 py-1 text-[0.65rem] font-semibold text-white transition hover:bg-slate-700 dark:bg-white dark:text-slate-900 dark:hover:bg-slate-200"
+          >
+            View comparison
+          </Link>
+        </div>
         <div className="mt-6 inline-flex items-center gap-3 rounded-full border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-700 shadow-sm dark:border-slate-800 dark:bg-slate-900 dark:text-slate-200">
           <span>Default scenario:</span>
           <code className="rounded bg-slate-100 px-2 py-1 text-xs font-semibold uppercase tracking-wide text-slate-600 dark:bg-slate-800 dark:text-slate-300">

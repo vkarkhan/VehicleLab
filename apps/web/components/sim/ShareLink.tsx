@@ -10,6 +10,7 @@ export type ShareConfig = {
   modelId: string;
   scenarioId: string;
   params: ModelParams;
+  lateralUnit?: "g" | "mps2";
 };
 
 type ShareLinkProps = {
@@ -47,3 +48,4 @@ export const ShareLink = ({ config }: ShareLinkProps) => {
     </Button>
   );
 };
+

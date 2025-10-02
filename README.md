@@ -1,102 +1,81 @@
 # VehicleLab
 
-Local-first prototype workspace for VehicleLab, a Next.js sandbox focused on vehicle dynamics experimentation.
+VehicleLab is a browser-based vehicle dynamics sandbox with presets, telemetry, and shareable deep links.
 
-## Stack Overview
-- **Web app:** Next.js 14 (App Router) with React 18 and Tailwind CSS.
-- **Content:** MDX powered by Contentlayer (`remark-gfm`, `rehype-slug`, `rehype-autolink-headings`).
-- **3D & viz:** `three`, `@react-three/fiber`, `@react-three/drei`.
-- **Data/Auth:** Prisma (SQLite) + NextAuth v5 beta, optional Stripe/Razorpay hooks.
-- **Tooling:** TypeScript 5, ESLint (Next rules), Playwright for browser tests.
+![Next.js 14](https://img.shields.io/badge/Next.js-14-000000?style=flat-square&logo=next.js&logoColor=white)
+![TypeScript 5](https://img.shields.io/badge/TypeScript-5-3178c6?style=flat-square&logo=typescript&logoColor=white)
+![Node 22.x](https://img.shields.io/badge/Node-22.x-43853d?style=flat-square&logo=node.js&logoColor=white)
 
-API routes live inside the Next.js app (`app/api`). A `/api/ping` route and matching homepage button provide an end-to-end smoke test out of the box.
+[Open Sandbox](/sim) | [Model Docs](/docs/models)
 
-## Monorepo Layout
-```
-vehiclelab/
-|-- apps/
-|     \-- web/            # Next.js application (+ Prisma, Contentlayer, etc.)
-|-- docs/AUDIT.md       # Audit report & local setup notes
-|-- .env.example        # Copy to .env.local for development
-|-- .nvmrc              # Node version pin (22.9.0)
-\-- package.json        # npm workspace entry point
-```
+## Quickstart
 
-## Prerequisites
-1. **Node.js:** Use the LTS 22.x line (`nvm use` will read `.nvmrc`).
-2. **npm:** Version 10+ (ships with Node 22).
-3. **SQLite:** Bundled with Node on macOS/Linux; Windows users can rely on Prisma's binary.
+### Requirements
+- Node.js 22.x (`.nvmrc` pins 22.9.0)
+- npm 10 (ships with Node 22)
+- SQLite (bundled; Prisma downloads the native binary on first install)
 
-## Getting Started (Local SQLite)
+### Setup
 ```bash
 nvm use
 npm install
-cp .env.local.example .env.local
-# ensure: DATABASE_URL=file:./apps/web/data/app.db
+cp .env.example .env.local
 npm run db:setup
 npm run dev
 ```
+Open http://localhost:3000 and use **Call /api/ping** to smoke-test the API.
 
-Open <http://localhost:3000>, then click **"Call /api/ping"** on the homepage to verify the API handler responds.
+### Common scripts
+- `npm run build` - Production build of the Next.js app
+- `npm run start` - Serve the build locally
+- `npm run lint` / `npm run typecheck` - Static analysis for the web workspace
+- `npm run test` - Playwright end-to-end tests (requires installed browsers)
+- `npm run content` - Regenerate Contentlayer output
 
-Note: Postgres and provider-specific column types will return in a follow-up PR once local testing wraps up.
+## Preview
 
-### Available Scripts
-- `npm run dev` - Starts `@app/web` in dev mode (HMR + API routes).
-- `npm run build` - Builds the Next.js app for production.
-- `npm run start` - Runs the production build locally.
-- `npm run db:setup` - Runs Prisma generate + push via the app workspace.
-- `npm run dev -w @app/web` - Direct access to the web workspace.
-- Within `apps/web`:
-  - `npm run lint` - ESLint via `next lint`.
-  - `npm run typecheck` - TypeScript diagnostics.
-  - `npm run test` - Playwright tests (requires browsers installed).
-  - `npm run content` - Regenerate Contentlayer output manually.
-  - `npm run db:generate` - Regenerates the Prisma client.
-  - `npm run db:push` - Applies the Prisma schema to the local SQLite file.
-  - `npm run db:studio` - Opens Prisma Studio against the local database.
+![Sandbox overview](./docs/screenshots/sandbox-overview.svg)
+
+## Highlights
+- Canvas-first sandbox with shareable presets, live telemetry, and exportable CSV or PNG artifacts
+- Linear 2-DOF and unicycle models with scenario presets and deep links into the sandbox
+- Local-first setup: SQLite, Prisma, and Contentlayer run without external services
+- Optional three.js viewer and validation badges keep heavy features gated by configuration
 
 ## Simulation Sandbox
-- Visit `/sim` for the canvas-first sandbox. The top bar switches models and scenarios, while the right panel exposes schema-driven parameters grouped into "Basic" and "Advanced".
-- Keyboard shortcuts: **Space** to run/pause, **R** to reset, number keys to swap scenarios instantly.
-- Telemetry mini-plots live in the collapsible footer; a ring buffer (~20 000 samples) keeps memory stable.
-- Share presets via the "Share" button (compressed into the `p` query param). Per-model docs live under `/docs/models/...` with one-click "Open in Sandbox" links.
-- Baseline validation badges trigger headless checks (e.g. unicycle constant-radius skidpad) and surface pass/fail with numerical metrics.
-- When Web Workers are unavailable the simulation loop falls back to a main-thread runner and displays a warning banner (expect higher CPU use).
+- Keyboard shortcuts: press Space to run or pause, R to reset, number keys (1-9) to swap scenarios instantly
+- Telemetry mini-plots use a ring buffer (about 20,000 samples) so charts stay smooth without starving the main thread
+- Share state through the Share button; the sandbox serialises into the `p` query parameter for deep links
+- Model docs link directly into presets, keeping docs and sandbox in sync
+- Baseline badges run deterministic checks and surface metrics inline
+- Scene viewer controls and validation overlays (planned, disabled by default) can be toggled via `apps/web/content/profile.json`
 
-## Environment Variables
-All configuration lives in `.env.local`. Start from `.env.example` which documents every supported variable:
+## Docs & Workflows
+- `/docs/models` - Model catalogue with parameter sheets and Open Sandbox shortcuts
+- `/docs/models/comparison` - Side-by-side comparison of available models and their recommended scenarios
+- `/sim` - Canvas-first sandbox with shareable query string presets
+- `/vehicellab` - Marketing page outlining capabilities for stakeholders
 
-| Variable | Description |
-| --- | --- |
-| `NEXTAUTH_URL` | Base URL for auth callbacks (defaults to localhost). |
-| `NEXTAUTH_SECRET` | Secret for NextAuth session handling. |
-| `RESEND_API_KEY` | Optional email delivery key. |
-| `DATABASE_URL` | Prisma connection string (`file:./apps/web/data/app.db`). |
-| `NEXT_PUBLIC_PLAUSIBLE_DOMAIN` | Optional analytics domain. |
-| `NEXT_PUBLIC_ENABLE_ANALYTICS` | Toggle analytics widgets in the UI. |
-| `NEXT_PUBLIC_ENABLE_ADS` | Toggle the ad slot component. |
-| `PAYMENT_REGION_AUTO` | Controls server-side payment region logic. |
-| `DEFAULT_CURRENCY` | Default currency for pricing pages. |
-| `STRIPE_SECRET_KEY`, `STRIPE_PUBLISHABLE_KEY`, `STRIPE_WEBHOOK_SECRET` | Stripe credentials. |
-| `STRIPE_PRICE_PRO_MONTHLY`, `STRIPE_PRICE_PRO_YEARLY`, `STRIPE_PRICE_LIFETIME` | Stripe price IDs displayed in the UI. |
-| `RAZORPAY_KEY_ID`, `RAZORPAY_KEY_SECRET`, `RAZORPAY_WEBHOOK_SECRET` | Razorpay credentials. |
-| `RAZORPAY_PLAN_PRO_MONTHLY`, `RAZORPAY_PLAN_PRO_YEARLY` | Razorpay plan IDs used on pricing. |
-| `LHCI_URL` | Optional override when running the Lighthouse script. |
-| `PLAYWRIGHT_BASE_URL` | Override the Playwright target URL. |
+## Repository Layout
+```
+vehiclelab/
+|- apps/
+|  \- web/          # Next.js app (App Router, Prisma, Contentlayer, workers)
+|- docs/            # Reference docs, screenshots, deployment notes
+|- .env.example     # Template for .env.local
+|- .nvmrc           # Node version pin (22.9.0)
+\- package.json     # npm workspace entry point
+```
 
-> Info Secrets are **not** committed. Keep your personal `.env.local` out of git.
+## Deployment Notes
+- `.nvmrc` pins Node 22.9.0; deploy targets should match to keep Prisma binaries compatible
+- `vercel.json` ships with a minimal config (edge-disabled, analytics opt-out) so the project can be dropped onto Vercel as-is
+- Environment variables live in `.env.local`; copy from `.env.example`. NextAuth, payments, and analytics stay disabled unless you provide credentials
 
 ## Troubleshooting
-- **npm 403 / registry issues:** If `npm install` fails with `403 Forbidden`, reset the registry:
-  ```bash
-  npm config set registry https://registry.npmjs.org/
-  npm cache clean --force
-  npm install
-  ```
-  Corporate proxies may require additional configuration.
-- **Contentlayer generation:** Installs no longer run Contentlayer automatically. `predev` and `prebuild` generate the cache when you run `npm run dev` or `npm run build`. You can run `npm run content -w @app/web` manually if needed.
-- **Prisma/SQLite path:** The default SQLite file lives at `apps/web/data/app.db`. Delete it if you want a clean slate.
-- **Windows shell:** VS Code defaults to Command Prompt via `.vscode/settings.json`. Switch to Git Bash if you prefer.
+- npm registry hiccups (403): `npm config set registry https://registry.npmjs.org/ && npm cache clean --force`
+- Contentlayer output missing: run `npm run content` or rerun `npm run dev` to regenerate caches
+- Reset the SQLite db: remove `apps/web/data/app.db` and rerun `npm run db:setup`
+- Windows shell quirks: Git Bash or WSL is recommended; Command Prompt may ignore some scripts
 
-Happy hacking!
+See `docs/AUDIT.md` for deeper notes on local-first auth, Prisma, and validation coverage.

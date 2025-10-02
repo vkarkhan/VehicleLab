@@ -24,7 +24,12 @@ import { ValidationPanel } from "./ValidationPanel";
 import type { ValidationRunResult } from "@/lib/validation/runner";
 
 const SandboxCanvas = dynamic(() => import("./SandboxCanvas").then((mod) => mod.SandboxCanvas), {
-  ssr: false
+  ssr: false,
+  loading: () => (
+    <div className="flex h-[520px] items-center justify-center rounded-3xl border border-dashed border-slate-300 bg-white text-center text-sm text-slate-500 dark:border-slate-700 dark:bg-slate-900">
+      Loading sandbox…
+    </div>
+  ),
 });
 
 const GRAVITY = 9.80665;
@@ -295,7 +300,7 @@ export function SandboxClient({ initialState, enable3D, isPro = false }: Sandbox
             </div>
             <div className="relative mt-auto flex items-center gap-2 pt-6 text-sm font-semibold text-white">
               <span className="inline-flex h-2 w-2 rounded-full bg-white/80" />
-              <span>Inspired by MathWorks reference imagery</span>
+              <span>Inspired by VehicleLab reference imagery</span>
             </div>
           </article>
         ))}

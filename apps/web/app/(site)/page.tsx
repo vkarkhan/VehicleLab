@@ -5,6 +5,7 @@ import { Card } from "@/components/Card";
 import { PingButton } from "@/components/ping-button";
 import { Section } from "@/components/Section";
 import { getBlogPosts, getGuides } from "@/lib/contentlayer";
+import { TERMINOLOGY } from "@/src/constants/terminology";
 
 const HeroVisual = dynamic(async () => {
   const mod = await import("@/components/hero-visual");
@@ -38,18 +39,26 @@ export default function HomePage() {
             </p>
             <div className="flex flex-wrap items-center gap-4">
               <Link
-                href="/vehicellab"
-                aria-label="Launch the VehicleLab sandbox"
+                href="/sim"
+                aria-label="Launch the live sandbox"
                 className="group inline-flex items-center justify-center gap-2 rounded-full bg-gradient-to-r from-slate-900 via-brand-700 to-brand-500 px-7 py-3 text-sm font-semibold uppercase tracking-wide text-white shadow-[0_22px_60px_-35px_rgba(79,70,229,0.85)] transition duration-300 hover:-translate-y-0.5 hover:shadow-[0_26px_70px_-34px_rgba(79,70,229,0.9)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:ring-offset-2 dark:from-white dark:via-brand-200 dark:to-brand-500 dark:text-slate-900"
               >
-                Launch the sandbox
+                Launch live sandbox
+              </Link>
+              <Link
+                href="/docs/models/comparison"
+                aria-label="Compare VehicleLab models"
+                className="inline-flex items-center justify-center gap-2 rounded-full border border-slate-200/70 bg-white/70 px-7 py-3 text-sm font-semibold uppercase tracking-wide text-slate-700 shadow-[0_12px_36px_-28px_rgba(15,23,42,0.6)] transition duration-300 hover:border-brand-300 hover:text-brand-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-400 focus-visible:ring-offset-2 dark:border-white/10 dark:bg-slate-900/40 dark:text-slate-200"
+              >
+                Compare models
               </Link>
               <Link
                 href="/guides"
                 aria-label="Open the VehicleLab guides"
-                className="inline-flex items-center justify-center gap-2 rounded-full border border-slate-200/70 bg-white/70 px-7 py-3 text-sm font-semibold uppercase tracking-wide text-slate-700 shadow-[0_12px_36px_-28px_rgba(15,23,42,0.6)] transition duration-300 hover:border-brand-300 hover:text-brand-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-400 focus-visible:ring-offset-2 dark:border-white/10 dark:bg-slate-900/40 dark:text-slate-200"
+                className="inline-flex items-center gap-1 text-sm font-semibold text-slate-600 transition hover:text-brand-600 dark:text-slate-300 dark:hover:text-brand-300"
               >
-                Explore guides
+                Read guides
+                <span aria-hidden>{"->"}</span>
               </Link>
             </div>
             <p className="text-sm font-medium text-slate-500 dark:text-slate-400">
@@ -78,12 +87,12 @@ export default function HomePage() {
       >
         <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
           <Card
-            eyebrow="Sandbox"
+            eyebrow={TERMINOLOGY.sandbox}
             title="Real-time vehicle dynamics"
             description="Manipulate mass, centre of gravity, and steering inputs in a tactile WebGL playground."
           />
           <Card
-            eyebrow="Telemetry"
+            eyebrow={TERMINOLOGY.telemetry}
             title="Charts that matter"
             description="Lateral acceleration, yaw rate, and slip angles sampled at 20 Hz to mirror track data."
           />
@@ -159,3 +168,4 @@ export default function HomePage() {
     </div>
   );
 }
+

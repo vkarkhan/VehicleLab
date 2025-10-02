@@ -41,7 +41,7 @@ const PlotCard = ({ title, unit, data, color = "#2563eb" }: PlotProps) => (
         <Tooltip
           contentStyle={{ fontSize: 12 }}
           labelFormatter={(value) => "t = " + Number(value).toFixed(2) + " s"}
-          formatter={(value: number) => [value.toFixed(3), title]}
+          formatter={(value: number) => [value.toFixed(3), title + " (" + unit + ")"]}
         />
         <Line type="monotone" dataKey="value" stroke={color} strokeWidth={2} dot={false} />
       </LineChart>
@@ -50,16 +50,25 @@ const PlotCard = ({ title, unit, data, color = "#2563eb" }: PlotProps) => (
 );
 
 const BUFFERED_SAMPLE_COUNT = 600;
+const GRAVITY = 9.80665;
 
 export const BottomPlots = () => {
   const samples = useSimStore((state) => state.telemetry.samples);
+  const lateralUnit = useSimStore((state) => state.lateralUnit);
   const [collapsed, setCollapsed] = useState(false);
 
   const trimmed = useMemo(() => samples.slice(-BUFFERED_SAMPLE_COUNT), [samples]);
 
   const yawRateSeries = useMemo(() => buildSeries(trimmed, "r"), [trimmed]);
-  const aySeries = useMemo(() => buildSeries(trimmed, "ay"), [trimmed]);
+  const aySeries = useMemo(() => {
+    const base = buildSeries(trimmed, "ay");
+    if (lateralUnit === "g") {
+      return base.map((entry) => ({ t: entry.t, value: entry.value / GRAVITY }));
+    }
+    return base;
+  }, [trimmed, lateralUnit]);
   const betaSeries = useMemo(() => buildSeries(trimmed, "beta"), [trimmed]);
+  const lateralUnitLabel = lateralUnit === "g" ? "g" : "m/s^2";
 
   return (
     <div
@@ -81,10 +90,11 @@ export const BottomPlots = () => {
       {!collapsed && (
         <div className="grid gap-4 px-4 pb-4 md:grid-cols-3">
           <PlotCard title="Yaw rate" unit="rad/s" data={yawRateSeries} />
-          <PlotCard title="Lateral accel" unit="m/s^2" data={aySeries} color="#7c3aed" />
+          <PlotCard title="Lateral accel" unit={lateralUnitLabel} data={aySeries} color="#7c3aed" />
           <PlotCard title="Sideslip" unit="rad" data={betaSeries} color="#16a34a" />
         </div>
       )}
     </div>
   );
 };
+
