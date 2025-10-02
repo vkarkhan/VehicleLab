@@ -1,0 +1,36 @@
+---
+title: "Frequency response"
+description: "Swept-sine steering to capture yaw-rate and lateral-acceleration Bode curves."
+order: 4
+---
+
+## Setup
+
+- Command a sequence of sinusoidal steering inputs covering target frequencies $\omega = 2\pi f$.
+- Use small amplitudes (\(\delta_{\text{pk}} \le 3^\circ\)) and run several cycles per frequency for steady response.
+- Measure yaw rate $r$ and lateral acceleration $a_y$; compute gain $|G(j\omega)|$ and phase $\angle G(j\omega)$.
+
+## Theory
+
+Linear bicycle yaw dynamics yield the transfer function:
+
+$$G_{r\delta}(s) = \frac{r(s)}{\delta(s)} = \frac{b_1 s + b_0}{s^2 + a_1 s + a_0}$$
+
+Magnitude and phase follow the standard second-order form. DC gain matches $K_{r\delta}$ from the step-steer test.
+
+The lateral-acceleration transfer function is $G_{a_y \delta}(s) = v G_{r\delta}(s) + s (b_1 s + b_0)/(s^2 + a_1 s + a_0)$.
+
+## Tolerances
+
+- DC yaw-rate gain within $5\%$ of $K_{r\delta}$.
+- Peak frequency location error $\le 10\%$.
+- Band-averaged magnitude RMS error $\le 15\%$.
+
+## Open in sandbox
+
+[Launch frequency-response reference test](/sim#reference-test-frequency)
+
+## Limitations
+
+- Linear transfer function assumes constant forward speed and no tyre saturation.
+- At high amplitudes or with friction clamp engaged, the measured peaks will flatten and shift.

@@ -9,6 +9,7 @@ import { useSearchParams } from "next/navigation";
 
 import { BottomPlots } from "@/components/sim/BottomPlots";
 import { RightPanel } from "@/components/sim/RightPanel";
+import { ReferenceTestsPanel } from "@/components/sim/ReferenceTestsPanel";
 import { TopBar } from "@/components/sim/TopBar";
 import { listScenarioPresets } from "@/lib/scenarios";
 import { bootModels } from "@/lib/models";
@@ -532,6 +533,7 @@ const SimPage = () => {
           </div>
           <BottomPlots />
         </div>
+        <ReferenceTestsPanel />
         <RightPanel
           collapsed={panelCollapsed}
           onToggle={() => setPanelCollapsed((value) => !value)}

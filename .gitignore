@@ -16,6 +16,7 @@ apps/*/contentlayer/generated/
 
 # Env files
 .env
+.env*
 .env.*
 !.env.example
 !.env.local.example
@@ -37,3 +38,6 @@ coverage
 
 # Husky generated files
 /.husky/_
+
+dev.log
+dev.err

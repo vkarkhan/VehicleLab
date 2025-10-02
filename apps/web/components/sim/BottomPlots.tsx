@@ -26,9 +26,10 @@ type PlotProps = {
   unit: string;
   data: { t: number; value: number }[];
   color?: string;
+  overlay?: { label: string; data: { t: number; value: number }[]; color?: string } | null;
 };
 
-const PlotCard = ({ title, unit, data, color = "#2563eb" }: PlotProps) => (
+const PlotCard = ({ title, unit, data, color = "#2563eb", overlay }: PlotProps) => (
   <div className="rounded-md border border-slate-200 bg-white p-3 shadow-sm dark:border-slate-800 dark:bg-slate-900">
     <h4 className="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">
       {title} ({unit})
@@ -44,6 +45,18 @@ const PlotCard = ({ title, unit, data, color = "#2563eb" }: PlotProps) => (
           formatter={(value: number) => [value.toFixed(3), title + " (" + unit + ")"]}
         />
         <Line type="monotone" dataKey="value" stroke={color} strokeWidth={2} dot={false} />
+        {overlay && (
+          <Line
+            type="monotone"
+            data={overlay.data}
+            dataKey="value"
+            stroke={overlay.color ?? "#0ea5e9"}
+            strokeWidth={2}
+            dot={false}
+            strokeDasharray="6 6"
+            name={overlay.label}
+          />
+        )}
       </LineChart>
     </ResponsiveContainer>
   </div>
@@ -55,6 +68,7 @@ const GRAVITY = 9.80665;
 export const BottomPlots = () => {
   const samples = useSimStore((state) => state.telemetry.samples);
   const lateralUnit = useSimStore((state) => state.lateralUnit);
+  const overlay = useSimStore((state) => state.overlays);
   const [collapsed, setCollapsed] = useState(false);
 
   const trimmed = useMemo(() => samples.slice(-BUFFERED_SAMPLE_COUNT), [samples]);
@@ -69,6 +83,35 @@ export const BottomPlots = () => {
   }, [trimmed, lateralUnit]);
   const betaSeries = useMemo(() => buildSeries(trimmed, "beta"), [trimmed]);
   const lateralUnitLabel = lateralUnit === "g" ? "g" : "m/s^2";
+
+  const overlaySeries = useMemo(() => {
+    if (!overlay) return { yaw: null, ay: null, beta: null };
+    const yaw = overlay.yawRate
+      ? {
+          label: overlay.yawRate.label,
+          data: overlay.yawRate.data,
+          color: "#0ea5e9",
+        }
+      : null;
+    const ayData = overlay.ay
+      ? {
+          label: overlay.ay.label,
+          data:
+            lateralUnit === "g"
+              ? overlay.ay.data.map((entry) => ({ t: entry.t, value: entry.value / GRAVITY }))
+              : overlay.ay.data,
+          color: "#0284c7",
+        }
+      : null;
+    const beta = overlay.beta
+      ? { label: overlay.beta.label, data: overlay.beta.data, color: "#14b8a6" }
+      : null;
+    return {
+      yaw,
+      ay: ayData,
+      beta,
+    };
+  }, [overlay, lateralUnit]);
 
   return (
     <div
@@ -89,9 +132,9 @@ export const BottomPlots = () => {
       </div>
       {!collapsed && (
         <div className="grid gap-4 px-4 pb-4 md:grid-cols-3">
-          <PlotCard title="Yaw rate" unit="rad/s" data={yawRateSeries} />
-          <PlotCard title="Lateral accel" unit={lateralUnitLabel} data={aySeries} color="#7c3aed" />
-          <PlotCard title="Sideslip" unit="rad" data={betaSeries} color="#16a34a" />
+          <PlotCard title="Yaw rate" unit="rad/s" data={yawRateSeries} overlay={overlaySeries.yaw} />
+          <PlotCard title="Lateral accel" unit={lateralUnitLabel} data={aySeries} color="#7c3aed" overlay={overlaySeries.ay} />
+          <PlotCard title="Sideslip" unit="rad" data={betaSeries} color="#16a34a" overlay={overlaySeries.beta} />
         </div>
       )}
     </div>

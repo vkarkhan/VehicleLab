@@ -1,0 +1,14 @@
+---
+title: "Canonical Reference Tests"
+description: "Overview of the four validation manoeuvres used to benchmark VehicleLab models."
+order: 1
+---
+
+Welcome to the VehicleLab canonical reference suite. Each manoeuvre packages a well-understood experiment, an analytic prediction, and PASS/FAIL tolerances so you can quickly benchmark any model implementation.
+
+- [Skidpad](/docs/tests/skidpad) &mdash; steady-state cornering on a fixed-radius path.
+- [Step-steer](/docs/tests/step-steer) &mdash; small-angle step input for damping and gain.
+- [Frequency response](/docs/tests/frequency) &mdash; multi-tone sweep for Bode magnitude and phase.
+- [Ramp to limit](/docs/tests/ramp-limit) &mdash; slow steer ramp to probe the friction envelope.
+
+Use the Reference Tests panel in the sandbox to run these directly. After each run, toggle the theory overlay to compare measured telemetry against the expected curves.

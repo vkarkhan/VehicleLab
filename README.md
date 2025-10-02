@@ -29,7 +29,8 @@ Open http://localhost:3000 and use **Call /api/ping** to smoke-test the API.
 - `npm run build` - Production build of the Next.js app
 - `npm run start` - Serve the build locally
 - `npm run lint` / `npm run typecheck` - Static analysis for the web workspace
-- `npm run test` - Playwright end-to-end tests (requires installed browsers)
+- `npm run test` - Unit tests (Vitest)
+- `npm run test:e2e` - Playwright end-to-end tests (requires installed browsers)
 - `npm run content` - Regenerate Contentlayer output
 
 ## Preview
@@ -41,6 +42,16 @@ Open http://localhost:3000 and use **Call /api/ping** to smoke-test the API.
 - Linear 2-DOF and unicycle models with scenario presets and deep links into the sandbox
 - Local-first setup: SQLite, Prisma, and Contentlayer run without external services
 - Optional three.js viewer and validation badges keep heavy features gated by configuration
+
+## Canonical reference tests
+- Four instrumented manoeuvres (skidpad, step-steer, frequency sweep, ramp-to-limit) now live inside the sandbox.
+- Toggle theory overlays to compare telemetry against analytic predictions, export CSV/JSON/PNG bundles, and deep-link each run.
+- Docs pages under `/docs/tests` describe setup, governing equations, tolerances, and deep links.
+
+## Physics conventions
+- Vehicle frame: $x$ forward, $y$ to driver left, $z$ up. Yaw $\psi$ increases counter-clockwise with yaw rate $r = \dot{\psi}$.
+- Understeer gradient $U$ (rad/g) and steady-state steer $\delta_{ss}$ now surface in the sandbox top bar and plot badges.
+- Friction clamp (per-axle $|F_y| \le \mu F_z$) is enabled by default for reference tests and flagged when active.
 
 ## Simulation Sandbox
 - Keyboard shortcuts: press Space to run or pause, R to reset, number keys (1-9) to swap scenarios instantly

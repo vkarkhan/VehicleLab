@@ -13,7 +13,8 @@
     "db:generate": "npm run db:generate -w @app/web",
     "db:push": "npm run db:push -w @app/web",
     "db:setup": "npm-run-all -s db:generate db:push",
-    "prepare": "husky install"
+    "prepare": "husky install",
+    "test": "npm run test -w @app/web"
   },
   "devDependencies": {
     "husky": "^9.1.7",

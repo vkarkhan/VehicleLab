@@ -1,5 +1,5 @@
-import { allBlogPosts, allGuides, allModelDocs } from "contentlayer/generated";
-import type { ModelDoc } from "contentlayer/generated";
+import { allBlogPosts, allGuides, allModelDocs, allTestDocs } from "contentlayer/generated";
+import type { ModelDoc, TestDoc } from "contentlayer/generated";
 
 export function getGuides() {
   return allGuides
@@ -36,4 +36,21 @@ export function getModelDocs(): ModelDoc[] {
 
 export function getModelDocBySlug(slug: string): ModelDoc | undefined {
   return getModelDocs().find((doc: ModelDoc) => doc.slug === slug);
+}
+
+export function getTestDocs(): TestDoc[] {
+  return allTestDocs
+    .slice()
+    .sort((a, b) => {
+      const orderA = typeof a.order === "number" ? a.order : 100;
+      const orderB = typeof b.order === "number" ? b.order : 100;
+      if (orderA !== orderB) {
+        return orderA - orderB;
+      }
+      return a.title.localeCompare(b.title);
+    });
+}
+
+export function getTestDocBySlug(slug: string): TestDoc | undefined {
+  return getTestDocs().find((doc) => doc.slug === slug);
 }

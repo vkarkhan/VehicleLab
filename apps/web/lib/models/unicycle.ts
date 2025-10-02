@@ -1,4 +1,5 @@
 ﻿import { z } from "zod";
+import { enforceDtBounds } from "@/lib/vehicle/dtGuards";
 import type { ModelDef, SimInputs } from "../sim/core";
 
 type UnicycleState = {
@@ -125,7 +126,9 @@ export const Unicycle: ModelDef<UnicycleParams, UnicycleState> = {
   defaults: schema.parse({}),
   init: () => ({ x: 0, y: 0, psi: 0, yawRate: 0 }),
   step: (state, inputs, dtArg, params) => {
-    const dt = params.dt ?? dtArg;
+    const requestedDt = params.dt ?? dtArg;
+    const guard = enforceDtBounds("unicycle", requestedDt);
+    const dt = guard.dt;
     if (params.integrator === "semiImplicitEuler") {
       return semiImplicitEulerStep(state, inputs, params, dt);
     }

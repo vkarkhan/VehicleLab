@@ -12,6 +12,7 @@ import {
   type SimulationSample,
   type VehicleTelemetry
 } from "@/lib/physics";
+import { simStateBus } from "@/lib/sim/stateBus";
 
 interface VehicleSimulationResult {
   samples: SimulationSample[];
@@ -84,6 +85,23 @@ export function useVehicleSimulation(state: SandboxState): VehicleSimulationResu
         vehicleState.yawRate = result.state.yawRate;
         vehicleState.lateralVelocity = result.state.lateralVelocity;
         latestTelemetry = result.telemetry;
+
+        simStateBus.publish({
+          telemetry: {
+            t: elapsed,
+            r: result.telemetry.yawRate,
+            ay: result.telemetry.lateralAcceleration,
+            beta: result.telemetry.slipAngle,
+            psi: result.telemetry.yawRate * TARGET_DT,
+          },
+          state: {
+            r: result.state.yawRate,
+            vy: result.state.lateralVelocity,
+          },
+          params: state,
+          modelId: "sandbox-bicycle",
+          scenarioId: state.manoeuvre ?? "sandbox",
+        });
 
         smoothing.lateralAcceleration.push(result.telemetry.lateralAcceleration);
         if (smoothing.lateralAcceleration.length > SMOOTHING_WINDOW) {

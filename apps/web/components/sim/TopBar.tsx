@@ -1,15 +1,17 @@
 "use client";
 
 import Link from "next/link";
-import type { ChangeEvent } from "react";
+import { useMemo, type ChangeEvent } from "react";
 
 import { Button } from "@/components/ui/button";
 import { Slider } from "@/components/ui/slider";
 import { InfoTooltip } from "@/components/InfoTooltip";
 import { cn } from "@/lib/utils";
-import { TERMINOLOGY } from "@/src/constants/terminology";
 import type { ScenarioPreset } from "@/lib/scenarios";
 import type { ModelDef } from "@/lib/sim/core";
+import { useSimStore } from "@/lib/store/simStore";
+import { createVehicleParams } from "@/lib/vehicle/params";
+import { computeUndersteerGradient, steadyStateSteerAngle } from "@/lib/vehicle/understeer";
 
 import type { ShareConfig } from "./ShareLink";
 import { ShareLink } from "./ShareLink";
@@ -57,6 +59,50 @@ export const TopBar = ({
   };
 
   const activeModel = models.find((item) => item.id === modelId);
+  const lastTelemetry = useSimStore((state) => state.lastTelemetry);
+  const storeParams = useSimStore((state) => state.params);
+
+  const steadyStateReadout = useMemo(() => {
+    const paramObject = storeParams as Record<string, unknown>;
+    const yawRate = lastTelemetry?.r ?? 0;
+    const speed = typeof paramObject.v === "number" ? paramObject.v : undefined;
+    const hasLinearParams =
+      typeof paramObject.m === "number" &&
+      typeof paramObject.Iz === "number" &&
+      typeof paramObject.a === "number" &&
+      typeof paramObject.b === "number" &&
+      typeof paramObject.Cf === "number" &&
+      typeof paramObject.Cr === "number" &&
+      typeof speed === "number";
+
+    if (!hasLinearParams || !speed || Math.abs(yawRate) < 1e-5) {
+      return { understeer: null as number | null, delta: null as number | null };
+    }
+
+    try {
+      const vehicleParams = createVehicleParams({
+        m: paramObject.m as number,
+        Iz: paramObject.Iz as number,
+        a: paramObject.a as number,
+        b: paramObject.b as number,
+        Cf: paramObject.Cf as number,
+        Cr: paramObject.Cr as number,
+        mu: (paramObject.mu as number) ?? 1,
+        track: (paramObject.trackWidth as number) ?? 1.6,
+        hCg: (paramObject.hCg as number) ?? 0.55,
+      });
+      const understeer = computeUndersteerGradient(vehicleParams);
+      const radius = speed / yawRate;
+      if (!Number.isFinite(radius)) {
+        return { understeer, delta: null as number | null };
+      }
+      const delta = steadyStateSteerAngle(speed, radius, vehicleParams);
+      return { understeer, delta };
+    } catch (error) {
+      console.warn("Unable to compute steady-state metrics", error);
+      return { understeer: null as number | null, delta: null as number | null };
+    }
+  }, [lastTelemetry, storeParams]);
 
   return (
     <div className="flex flex-wrap items-center gap-4 border-b border-slate-200 bg-white/80 px-6 py-3 backdrop-blur-md dark:border-slate-800 dark:bg-slate-950/80">
@@ -164,6 +210,15 @@ export const TopBar = ({
           >
             m/s^2
           </button>
+        </div>
+      </div>
+
+      <div className="flex items-center gap-3 rounded-md border border-slate-200 bg-white/80 px-3 py-1 text-xs font-semibold text-slate-600 dark:border-slate-800 dark:bg-slate-900/70 dark:text-slate-200">
+        <div>
+          U {steadyStateReadout.understeer !== null ? steadyStateReadout.understeer.toFixed(4) : "—"} rad/g
+        </div>
+        <div>
+          δ<sub>ss</sub> {steadyStateReadout.delta !== null ? (steadyStateReadout.delta * 57.2958).toFixed(1) : "—"}°
         </div>
       </div>
 
