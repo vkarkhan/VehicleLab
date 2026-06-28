@@ -97,7 +97,7 @@ export default function ModelDocPage({ params }: ModelDocPageProps) {
             <div className="flex flex-wrap items-center gap-3 text-xs uppercase tracking-wide text-slate-500 dark:text-slate-400">
               <span>Validated by canonical tests</span>
               <span className="rounded-full bg-slate-200 px-2 py-0.5 text-[10px] font-semibold text-slate-700 dark:bg-slate-800 dark:text-slate-200">
-                Solver {String(defaultIntegrator)} · dt {typeof defaultDt === "number" ? defaultDt.toFixed(3) + " s" : "adaptive"}
+                Solver {String(defaultIntegrator)} - dt {typeof defaultDt === "number" ? defaultDt.toFixed(3) + " s" : "adaptive"}
               </span>
             </div>
             <ul className="flex flex-wrap gap-2 text-xs">

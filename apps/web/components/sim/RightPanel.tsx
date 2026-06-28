@@ -46,16 +46,22 @@ export const RightPanel = ({
       </button>
       {!collapsed && (
         <div className="flex flex-1 flex-col gap-4 overflow-y-auto px-4 py-4 text-sm">
+          <section className="space-y-1" data-test="parameter-panel">
+            <h2 className="text-sm font-semibold text-slate-900 dark:text-white">Model parameters</h2>
+            <p className="text-xs leading-5 text-slate-500 dark:text-slate-400">
+              Tune mass, CG split, speed, and cornering stiffness. Apply changes before rerunning the lab.
+            </p>
+          </section>
           <section>
             <h3 className="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">
-              Basic
+              Basic vehicle setup
             </h3>
             <div className="space-y-3">{basicContent}</div>
           </section>
           <section>
             <details className="rounded-md border border-slate-200 bg-slate-50 open:shadow-sm dark:border-slate-800 dark:bg-slate-900">
               <summary className="cursor-pointer px-3 py-2 text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-300">
-                Advanced
+                Assumptions and solver
               </summary>
               <div className="space-y-3 px-3 py-3">{advancedContent}</div>
             </details>

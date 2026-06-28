@@ -13,12 +13,16 @@ const sora = Sora({ subsets: ["latin"], variable: "--font-sora" });
 
 export const metadata: Metadata = {
   title: {
-    default: `${siteConfig.name} — Vehicle Dynamics Sandbox`,
-    template: `%s — ${siteConfig.name}`
+    default: `${siteConfig.name} - Vehicle Dynamics Sandbox`,
+    template: `%s - ${siteConfig.name}`
   },
   description: siteConfig.description,
   keywords: siteConfig.keywords,
   metadataBase: new URL(siteConfig.url),
+  icons: {
+    icon: "/icon.svg",
+    shortcut: "/icon.svg",
+  },
   openGraph: {
     type: "website",
     locale: "en_US",
@@ -71,5 +75,4 @@ export default function RootLayout({
     </html>
   );
 }
-
 

@@ -30,8 +30,8 @@ export function computeLateralForces(
   angles: SlipAngles,
   stiffness: { Cf: number; Cr: number }
 ): LateralForces {
-  const FyFront = -stiffness.Cf * angles.front;
-  const FyRear = -stiffness.Cr * angles.rear;
+  const FyFront = stiffness.Cf * angles.front;
+  const FyRear = stiffness.Cr * angles.rear;
   return { front: FyFront, rear: FyRear };
 }
 

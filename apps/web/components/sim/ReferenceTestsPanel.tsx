@@ -224,6 +224,26 @@ const metricLabel: Record<string, string> = {
   steerAtLimit: "Steer limit",
 };
 
+export function formatReferenceValue(value: unknown): string {
+  if (typeof value === "number") {
+    if (!Number.isFinite(value)) return "N/A";
+    if (Math.abs(value) >= 100 || Number.isInteger(value)) return value.toString();
+    return value.toFixed(3).replace(/0+$/, "").replace(/\.$/, "");
+  }
+  if (Array.isArray(value)) {
+    return value.map((item) => formatReferenceValue(item)).join(", ");
+  }
+  if (value && typeof value === "object") {
+    return Object.entries(value as Record<string, unknown>)
+      .map(([key, entry]) => key + " " + formatReferenceValue(entry))
+      .join(", ");
+  }
+  if (typeof value === "boolean") {
+    return value ? "Yes" : "No";
+  }
+  return value == null ? "N/A" : String(value);
+}
+
 export const ReferenceTestsPanel = () => {
   const modelId = useSimStore((state) => state.modelId);
   const params = useSimStore((state) => state.params);
@@ -320,7 +340,7 @@ export const ReferenceTestsPanel = () => {
                 {Object.entries(test.defaults).map(([key, value]) => (
                   <div key={key}>
                     <dt className="uppercase tracking-wide text-[10px] text-slate-400 dark:text-slate-500">{key}</dt>
-                    <dd>{typeof value === "number" ? value.toString() : String(value)}</dd>
+                    <dd>{formatReferenceValue(value)}</dd>
                   </div>
                 ))}
               </dl>

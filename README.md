@@ -11,27 +11,41 @@ VehicleLab is a browser-based vehicle dynamics sandbox with presets, telemetry, 
 ## Quickstart
 
 ### Requirements
-- Node.js 22.x (`.nvmrc` pins 22.9.0)
-- npm 10 (ships with Node 22)
+- Node.js 22.x recommended (`.nvmrc` pins 22.9.0)
+- npm 10 or a compatible npm version
 - SQLite (bundled; Prisma downloads the native binary on first install)
+- Windows PowerShell users may need `npm.cmd` instead of `npm` if `npm.ps1` is blocked by execution policy.
 
 ### Setup
-```bash
-nvm use
-npm install
-cp .env.example .env.local
-npm run db:setup
-npm run dev
+```powershell
+nvm use 22.9.0
+npm.cmd ci
+Copy-Item .env.example .env.local
+npm.cmd run db:setup
+npm.cmd run dev
 ```
+Use `npm.cmd install` only when `npm.cmd ci` is not appropriate, such as after intentionally changing dependencies.
+
 Open http://localhost:3000 and use **Call /api/ping** to smoke-test the API.
 
+### Local app routes
+- http://localhost:3000
+- http://localhost:3000/sim
+- http://localhost:3000/docs/models
+- http://localhost:3000/docs/tests
+- http://localhost:3000/vehicellab
+- http://localhost:3000/api/ping
+
 ### Common scripts
-- `npm run build` - Production build of the Next.js app
-- `npm run start` - Serve the build locally
-- `npm run lint` / `npm run typecheck` - Static analysis for the web workspace
-- `npm run test` - Unit tests (Vitest)
-- `npm run test:e2e` - Playwright end-to-end tests (requires installed browsers)
-- `npm run content` - Regenerate Contentlayer output
+- `npm.cmd run dev` - Start the Next.js dev server
+- `npm.cmd run build` - Production build of the Next.js app
+- `npm.cmd run start` - Serve the production build locally
+- `npm.cmd run lint` - ESLint for the web workspace
+- `npm.cmd run typecheck` - TypeScript static checks
+- `npm.cmd run test` - Unit tests (Vitest)
+- `npm.cmd run test:e2e` - Playwright end-to-end tests (requires installed browsers)
+- `npm.cmd run content` - Regenerate Contentlayer output
+- `npm.cmd run db:generate` / `npm.cmd run db:push` - Prisma local SQLite setup helpers
 
 ## Preview
 
@@ -54,6 +68,7 @@ Open http://localhost:3000 and use **Call /api/ping** to smoke-test the API.
 - Friction clamp (per-axle $|F_y| \le \mu F_z$) is enabled by default for reference tests and flagged when active.
 
 ## Simulation Sandbox
+- `/sim` is now the v2 Bicycle Model Lab surface centered on the 2-DOF Linear Bicycle model.
 - Keyboard shortcuts: press Space to run or pause, R to reset, number keys (1-9) to swap scenarios instantly
 - Telemetry mini-plots use a ring buffer (about 20,000 samples) so charts stay smooth without starving the main thread
 - Share state through the Share button; the sandbox serialises into the `p` query parameter for deep links
@@ -82,6 +97,12 @@ vehiclelab/
 - `.nvmrc` pins Node 22.9.0; deploy targets should match to keep Prisma binaries compatible
 - `vercel.json` ships with a minimal config (edge-disabled, analytics opt-out) so the project can be dropped onto Vercel as-is
 - Environment variables live in `.env.local`; copy from `.env.example`. NextAuth, payments, and analytics stay disabled unless you provide credentials
+
+## Known Limitations
+- VehicleLab is a browser-based educational sandbox, not a replacement for full multibody simulation or track validation.
+- The current v2 lab focuses on a constant-speed 2-DOF linear bicycle model.
+- The linear tyre approximation is most credible at small slip angles; large steering inputs and limit handling should be interpreted cautiously.
+- Auth, payments, and database-backed user workflows are intentionally outside the v2 MVP bring-up path.
 
 ## Troubleshooting
 - npm registry hiccups (403): `npm config set registry https://registry.npmjs.org/ && npm cache clean --force`

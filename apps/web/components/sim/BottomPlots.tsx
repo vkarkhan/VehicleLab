@@ -31,34 +31,43 @@ type PlotProps = {
 
 const PlotCard = ({ title, unit, data, color = "#2563eb", overlay }: PlotProps) => (
   <div className="rounded-md border border-slate-200 bg-white p-3 shadow-sm dark:border-slate-800 dark:bg-slate-900">
-    <h4 className="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">
-      {title} ({unit})
-    </h4>
-    <ResponsiveContainer width="100%" height={120}>
-      <LineChart data={data} margin={{ left: 4, right: 12, top: 4, bottom: 4 }}>
-        <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
-        <XAxis dataKey="t" tick={{ fontSize: 10 }} tickLine={false} axisLine={false} stroke="#94a3b8" />
-        <YAxis tick={{ fontSize: 10 }} tickLine={false} axisLine={false} stroke="#94a3b8" domain={["auto", "auto"]} />
-        <Tooltip
-          contentStyle={{ fontSize: 12 }}
-          labelFormatter={(value) => "t = " + Number(value).toFixed(2) + " s"}
-          formatter={(value: number) => [value.toFixed(3), title + " (" + unit + ")"]}
-        />
-        <Line type="monotone" dataKey="value" stroke={color} strokeWidth={2} dot={false} />
-        {overlay && (
-          <Line
-            type="monotone"
-            data={overlay.data}
-            dataKey="value"
-            stroke={overlay.color ?? "#0ea5e9"}
-            strokeWidth={2}
-            dot={false}
-            strokeDasharray="6 6"
-            name={overlay.label}
+    <div className="mb-2 flex items-center justify-between gap-2">
+      <h4 className="text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">
+        {title} ({unit})
+      </h4>
+      {overlay && <span className="text-[10px] font-semibold uppercase tracking-wide text-sky-600">Theory</span>}
+    </div>
+    {data.length === 0 ? (
+      <div className="flex h-40 items-center justify-center rounded-md border border-dashed border-slate-200 bg-slate-50 px-4 text-center text-xs text-slate-500 dark:border-slate-800 dark:bg-slate-950 dark:text-slate-400">
+        Press Run to stream {title.toLowerCase()} telemetry.
+      </div>
+    ) : (
+      <ResponsiveContainer width="100%" height={160}>
+        <LineChart data={data} margin={{ left: 4, right: 12, top: 4, bottom: 4 }}>
+          <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
+          <XAxis dataKey="t" tick={{ fontSize: 10 }} tickLine={false} axisLine={false} stroke="#94a3b8" />
+          <YAxis tick={{ fontSize: 10 }} tickLine={false} axisLine={false} stroke="#94a3b8" domain={["auto", "auto"]} />
+          <Tooltip
+            contentStyle={{ fontSize: 12 }}
+            labelFormatter={(value) => "t = " + Number(value).toFixed(2) + " s"}
+            formatter={(value: number) => [value.toFixed(3), title + " (" + unit + ")"]}
           />
-        )}
-      </LineChart>
-    </ResponsiveContainer>
+          <Line type="monotone" dataKey="value" stroke={color} strokeWidth={2} dot={false} />
+          {overlay && (
+            <Line
+              type="monotone"
+              data={overlay.data}
+              dataKey="value"
+              stroke={overlay.color ?? "#0ea5e9"}
+              strokeWidth={2}
+              dot={false}
+              strokeDasharray="6 6"
+              name={overlay.label}
+            />
+          )}
+        </LineChart>
+      </ResponsiveContainer>
+    )}
   </div>
 );
 
@@ -117,7 +126,7 @@ export const BottomPlots = () => {
     <div
       className={cn(
         "border-t border-slate-200 bg-white/90 backdrop-blur transition-[max-height] duration-200 dark:border-slate-800 dark:bg-slate-950/90",
-        collapsed ? "max-h-12" : "max-h-96"
+        collapsed ? "max-h-12" : "max-h-[28rem]"
       )}
     >
       <div className="flex items-center justify-between px-4 py-2 text-sm">
@@ -126,7 +135,7 @@ export const BottomPlots = () => {
           onClick={() => setCollapsed((value) => !value)}
           className="text-slate-600 transition-colors hover:text-slate-900 dark:text-slate-300 dark:hover:text-slate-100"
         >
-          Mini plots {collapsed ? "(show)" : "(hide)"}
+          Telemetry {collapsed ? "(show)" : "(hide)"}
         </button>
         <span className="text-xs text-slate-400 dark:text-slate-500" data-test="telemetry-sample-count">{trimmed.length} samples</span>
       </div>

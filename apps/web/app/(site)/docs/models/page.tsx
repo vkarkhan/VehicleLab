@@ -81,7 +81,7 @@ export default function ModelsDocsPage() {
                   className="inline-flex items-center gap-2 text-brand-600 transition hover:text-brand-500 dark:text-brand-300 dark:hover:text-brand-200"
                 >
                   Read {TERMINOLOGY.modelDocs}
-                  <span aria-hidden>â†’</span>
+                  <span aria-hidden>-&gt;</span>
                 </Link>
                 {row.sandboxHref ? (
                   <Link
@@ -89,7 +89,7 @@ export default function ModelsDocsPage() {
                     className="inline-flex items-center gap-2 rounded-full bg-slate-900 px-3 py-1 text-[0.65rem] font-semibold tracking-[0.2em] text-white transition hover:bg-slate-700 dark:bg-white dark:text-slate-900 dark:hover:bg-slate-200"
                   >
                     {row.scenarioLabel}
-                    <span className="hidden sm:inline">â€” Open {TERMINOLOGY.sandbox}</span>
+                    <span className="hidden sm:inline">- Open {TERMINOLOGY.sandbox}</span>
                     <span className="sm:hidden">Launch</span>
                   </Link>
                 ) : null}

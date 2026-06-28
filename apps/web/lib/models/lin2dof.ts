@@ -122,6 +122,7 @@ type Lin2DofState = {
   rearLimited: number;
   vxEffective: number;
   dtClamped: number;
+  steerAngle: number;
 };
 
 type StateDerivative = {
@@ -304,6 +305,7 @@ const postStep = (
     rearLimited: diagnostics.limitRear ? 1 : 0,
     vxEffective: ctx.coeffs.vx,
     dtClamped: ctx.dtClamped ? 1 : 0,
+    steerAngle: inputs.steer ?? 0,
   };
 };
 
@@ -372,6 +374,7 @@ export const Lin2DOF: ModelDef<Lin2DofParams, Lin2DofState> = {
     rearLimited: 0,
     vxEffective: 0,
     dtClamped: 0,
+    steerAngle: 0,
   }),
   step: (state, inputs, dtArg, params) => {
     const requestedDt = params.dt ?? dtArg;
@@ -392,6 +395,8 @@ export const Lin2DOF: ModelDef<Lin2DofParams, Lin2DofState> = {
     r: state.r,
     ay: state.ay,
     beta: Math.atan2(state.vy, state.vxEffective || params.v || 1e-3),
+    frontSlipAngle: state.slipFront,
+    rearSlipAngle: state.slipRear,
     notes: {
       vyDot: state.vyDot,
       slipFront: state.slipFront,
@@ -402,6 +407,7 @@ export const Lin2DOF: ModelDef<Lin2DofParams, Lin2DofState> = {
       rearLimited: state.rearLimited,
       vxEffective: state.vxEffective,
       dtClamped: state.dtClamped,
+      steerAngle: state.steerAngle,
     },
   }),
   geometry: (params) => ({

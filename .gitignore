@@ -30,6 +30,13 @@ apps/*/data/**/*.db
 /test-results
 coverage
 
+# TypeScript incremental outputs
+*.tsbuildinfo
+
+# Runtime logs
+stdout.dev.out
+stdout.dev.err
+
 # Platform directories
 /.vercel
 

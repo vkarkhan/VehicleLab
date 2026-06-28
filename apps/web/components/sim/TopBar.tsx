@@ -11,7 +11,7 @@ import type { ScenarioPreset } from "@/lib/scenarios";
 import type { ModelDef } from "@/lib/sim/core";
 import { useSimStore } from "@/lib/store/simStore";
 import { createVehicleParams } from "@/lib/vehicle/params";
-import { computeUndersteerGradient, steadyStateSteerAngle } from "@/lib/vehicle/understeer";
+import { computeUndersteerGradient, safeSteadyStateSteerAngle } from "@/lib/vehicle/understeer";
 import { TERMINOLOGY } from "@/src/constants/terminology";
 
 import type { ShareConfig } from "./ShareLink";
@@ -94,13 +94,9 @@ export const TopBar = ({
       });
       const understeer = computeUndersteerGradient(vehicleParams);
       const radius = speed / yawRate;
-      if (!Number.isFinite(radius)) {
-        return { understeer, delta: null as number | null };
-      }
-      const delta = steadyStateSteerAngle(speed, radius, vehicleParams);
+      const delta = safeSteadyStateSteerAngle(speed, radius, vehicleParams);
       return { understeer, delta };
-    } catch (error) {
-      console.warn("Unable to compute steady-state metrics", error);
+    } catch {
       return { understeer: null as number | null, delta: null as number | null };
     }
   }, [lastTelemetry, storeParams]);
@@ -216,10 +212,10 @@ export const TopBar = ({
 
       <div className="flex items-center gap-3 rounded-md border border-slate-200 bg-white/80 px-3 py-1 text-xs font-semibold text-slate-600 dark:border-slate-800 dark:bg-slate-900/70 dark:text-slate-200">
         <div>
-          U {steadyStateReadout.understeer !== null ? steadyStateReadout.understeer.toFixed(4) : "—"} rad/g
+          U {steadyStateReadout.understeer !== null ? steadyStateReadout.understeer.toFixed(4) : "N/A"} rad/g
         </div>
         <div>
-          δ<sub>ss</sub> {steadyStateReadout.delta !== null ? (steadyStateReadout.delta * 57.2958).toFixed(1) : "—"}°
+          delta<sub>ss</sub> {steadyStateReadout.delta !== null ? (steadyStateReadout.delta * 57.2958).toFixed(1) : "N/A"} deg
         </div>
       </div>
 

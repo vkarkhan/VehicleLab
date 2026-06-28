@@ -7,9 +7,10 @@ import * as THREE from "three";
 
 import { clamp } from "@/lib/utils";
 import { createVehicleParams } from "@/lib/vehicle/params";
-import { computeUndersteerGradient, steadyStateSteerAngle } from "@/lib/vehicle/understeer";
+import { computeUndersteerGradient, safeSteadyStateSteerAngle } from "@/lib/vehicle/understeer";
 import { useSimStore } from "@/lib/store/simStore";
 import { getModel } from "@/lib/sim/registry";
+import type { Telemetry } from "@/lib/sim/core";
 
 const lerp = (current: number, target: number, alpha: number) => current + (target - current) * alpha;
 
@@ -24,29 +25,37 @@ type VehicleProps = {
   geometry: VehicleGeometry;
   state: Record<string, number> | null;
   wheelRadius: number;
+  steerAngle: number;
 };
 
 const buildWheelPositions = (geometry: VehicleGeometry, wheelRadius: number) => {
   const wheelbase = geometry.wheelbase ?? geometry.length * 0.62;
-  const overhang = Math.max((geometry.length - wheelbase) * 0.5, 0.18);
   const halfTrack = geometry.width * 0.5 * 0.86;
   return {
-    frontLeft: [wheelbase * 0.5 + overhang, wheelRadius, halfTrack] as [number, number, number],
-    frontRight: [wheelbase * 0.5 + overhang, wheelRadius, -halfTrack] as [number, number, number],
-    rearLeft: [-wheelbase * 0.5 - overhang, wheelRadius, halfTrack] as [number, number, number],
-    rearRight: [-wheelbase * 0.5 - overhang, wheelRadius, -halfTrack] as [number, number, number],
+    frontLeft: [wheelbase * 0.5, wheelRadius, halfTrack] as [number, number, number],
+    frontRight: [wheelbase * 0.5, wheelRadius, -halfTrack] as [number, number, number],
+    rearLeft: [-wheelbase * 0.5, wheelRadius, halfTrack] as [number, number, number],
+    rearRight: [-wheelbase * 0.5, wheelRadius, -halfTrack] as [number, number, number],
   };
 };
 
-const Wheel = ({ position, radius }: { position: [number, number, number]; radius: number }) => (
-  <group position={position}>
+const Wheel = ({
+  position,
+  radius,
+  steerAngle = 0,
+}: {
+  position: [number, number, number];
+  radius: number;
+  steerAngle?: number;
+}) => (
+  <group position={position} rotation={[0, steerAngle, 0]}>
     <mesh castShadow rotation={[0, 0, Math.PI * 0.5]}>
       <cylinderGeometry args={[radius, radius, radius * 0.52, 24]} />
-      <meshStandardMaterial color="#111827" metalness={0.32} roughness={0.45} />
+      <meshStandardMaterial color="#111827" metalness={0.2} roughness={0.58} />
     </mesh>
     <mesh rotation={[0, 0, Math.PI * 0.5]}>
       <cylinderGeometry args={[radius * 0.55, radius * 0.55, radius * 0.18, 12]} />
-      <meshStandardMaterial color="#4b5563" metalness={0.45} roughness={0.25} />
+      <meshStandardMaterial color="#cbd5e1" metalness={0.45} roughness={0.25} />
     </mesh>
   </group>
 );
@@ -60,31 +69,52 @@ const VehicleBody = ({ geometry, wheelRadius }: { geometry: VehicleGeometry; whe
 
   return (
     <group>
-      <mesh castShadow receiveShadow position={[0, cabinHeight * 0.35, 0]}>
-        <boxGeometry args={[geometry.length, cabinHeight * 0.62, geometry.width * 0.94]} />
-        <meshStandardMaterial color="#1f2937" metalness={0.28} roughness={0.52} />
+      <mesh castShadow receiveShadow position={[0, cabinHeight * 0.34, 0]}>
+        <boxGeometry args={[geometry.length, cabinHeight * 0.62, geometry.width * 0.9]} />
+        <meshStandardMaterial color="#2563eb" metalness={0.22} roughness={0.48} />
       </mesh>
       <mesh castShadow position={[cabinOffset, roofHeight * 0.5, 0]}>
-        <boxGeometry args={[cabinLength, roofHeight * 0.6, geometry.width * 0.78]} />
-        <meshStandardMaterial color="#475569" metalness={0.32} roughness={0.4} />
+        <boxGeometry args={[cabinLength, roofHeight * 0.58, geometry.width * 0.68]} />
+        <meshStandardMaterial color="#93c5fd" metalness={0.18} roughness={0.26} />
       </mesh>
       <mesh castShadow position={[bonnetLength * 0.36, cabinHeight * 0.54, 0]}>
-        <boxGeometry args={[bonnetLength, cabinHeight * 0.5, geometry.width * 0.84]} />
-        <meshStandardMaterial color="#1e293b" metalness={0.3} roughness={0.48} />
+        <boxGeometry args={[bonnetLength, cabinHeight * 0.44, geometry.width * 0.74]} />
+        <meshStandardMaterial color="#1d4ed8" metalness={0.22} roughness={0.44} />
       </mesh>
       <mesh castShadow position={[-geometry.length * 0.32, cabinHeight * 0.54, 0]}>
-        <boxGeometry args={[geometry.length * 0.3, cabinHeight * 0.48, geometry.width * 0.84]} />
-        <meshStandardMaterial color="#1e293b" metalness={0.3} roughness={0.48} />
+        <boxGeometry args={[geometry.length * 0.28, cabinHeight * 0.44, geometry.width * 0.78]} />
+        <meshStandardMaterial color="#1e40af" metalness={0.22} roughness={0.48} />
+      </mesh>
+      <mesh position={[geometry.length * 0.49, cabinHeight * 0.7, 0]}>
+        <boxGeometry args={[0.08, cabinHeight * 0.42, geometry.width * 0.62]} />
+        <meshStandardMaterial color="#f97316" emissive="#7c2d12" emissiveIntensity={0.15} roughness={0.3} />
       </mesh>
       <mesh position={[bonnetLength * 0.15, roofHeight * 0.62, 0]}>
-        <boxGeometry args={[cabinLength * 0.68, roofHeight * 0.24, geometry.width * 0.68]} />
-        <meshStandardMaterial color="#0f172a" metalness={0.22} roughness={0.18} opacity={0.74} transparent />
+        <boxGeometry args={[cabinLength * 0.62, roofHeight * 0.2, geometry.width * 0.58]} />
+        <meshStandardMaterial color="#0f172a" metalness={0.22} roughness={0.18} opacity={0.68} transparent />
       </mesh>
     </group>
   );
 };
 
-const Vehicle = ({ geometry, state, wheelRadius }: VehicleProps) => {
+const VehicleOverlays = ({ geometry, wheelRadius, steerAngle }: { geometry: VehicleGeometry; wheelRadius: number; steerAngle: number }) => (
+  <group>
+    <mesh position={[0, wheelRadius * 2.4, 0]}>
+      <sphereGeometry args={[wheelRadius * 0.22, 16, 16]} />
+      <meshStandardMaterial color="#f97316" emissive="#f97316" emissiveIntensity={0.2} />
+    </mesh>
+    <mesh position={[geometry.length * 0.36, wheelRadius * 1.75, 0]} rotation={[0, 0, -Math.PI * 0.5]}>
+      <coneGeometry args={[wheelRadius * 0.2, wheelRadius * 0.72, 24]} />
+      <meshStandardMaterial color="#f97316" emissive="#f97316" emissiveIntensity={0.18} />
+    </mesh>
+    <mesh position={[geometry.length * 0.5, wheelRadius * 1.35, 0]} rotation={[0, steerAngle, 0]}>
+      <boxGeometry args={[wheelRadius * 0.16, wheelRadius * 0.12, geometry.width * 0.9]} />
+      <meshStandardMaterial color="#facc15" roughness={0.32} />
+    </mesh>
+  </group>
+);
+
+const Vehicle = ({ geometry, state, wheelRadius, steerAngle }: VehicleProps) => {
   const ref = useRef<THREE.Group>(null);
   const wheelPositions = useMemo(() => buildWheelPositions(geometry, wheelRadius), [geometry, wheelRadius]);
 
@@ -107,18 +137,36 @@ const Vehicle = ({ geometry, state, wheelRadius }: VehicleProps) => {
   return (
     <group ref={ref} position={[0, wheelRadius + 0.02, 0]}>
       <VehicleBody geometry={geometry} wheelRadius={wheelRadius} />
-      <Wheel position={wheelPositions.frontLeft} radius={wheelRadius} />
-      <Wheel position={wheelPositions.frontRight} radius={wheelRadius} />
+      <VehicleOverlays geometry={geometry} wheelRadius={wheelRadius} steerAngle={steerAngle} />
+      <Wheel position={wheelPositions.frontLeft} radius={wheelRadius} steerAngle={steerAngle} />
+      <Wheel position={wheelPositions.frontRight} radius={wheelRadius} steerAngle={steerAngle} />
       <Wheel position={wheelPositions.rearLeft} radius={wheelRadius} />
       <Wheel position={wheelPositions.rearRight} radius={wheelRadius} />
     </group>
   );
 };
 
+const PathTrace = ({ samples }: { samples: readonly Telemetry[] }) => {
+  const trace = useMemo(() => {
+    const points = samples
+      .slice(-1000)
+      .filter((sample) => typeof sample.x === "number" && typeof sample.y === "number")
+      .map((sample) => new THREE.Vector3(sample.x ?? 0, 0.035, sample.y ?? 0));
+    if (points.length < 2) return null;
+    const geometry = new THREE.BufferGeometry().setFromPoints(points);
+    const material = new THREE.LineBasicMaterial({ color: "#2563eb", transparent: true, opacity: 0.78 });
+    return new THREE.Line(geometry, material);
+  }, [samples]);
+
+  if (!trace) return null;
+
+  return <primitive object={trace} />;
+};
+
 const GroundGrid = () => {
   const helper = useMemo(() => {
-    const grid = new THREE.GridHelper(160, 40, 0x94a3b8, 0xcbd5f5);
-    grid.position.y = 0;
+    const grid = new THREE.GridHelper(160, 40, 0x64748b, 0xcbd5e1);
+    grid.position.y = 0.02;
     return grid;
   }, []);
 
@@ -134,6 +182,7 @@ export const SimCanvas = () => {
     modelId: state.modelId,
     params: state.params,
   }));
+  const telemetrySamples = useSimStore((state) => state.telemetry.samples);
 
   const geometry = useMemo<VehicleGeometry>(() => {
     const model = getModel(modelId);
@@ -195,11 +244,10 @@ export const SimCanvas = () => {
         });
         understeer = computeUndersteerGradient(vehicleParams);
         const radius = speed / yawRate;
-        if (Number.isFinite(radius)) {
-          deltaSs = steadyStateSteerAngle(speed, radius, vehicleParams);
-        }
-      } catch (error) {
-        console.warn("Unable to derive steady-state metrics", error);
+        deltaSs = safeSteadyStateSteerAngle(speed, radius, vehicleParams);
+      } catch {
+        understeer = null;
+        deltaSs = null;
       }
     }
 
@@ -222,30 +270,40 @@ export const SimCanvas = () => {
     };
   }, [lastTelemetry, params]);
 
+  const steerAngle = useMemo(() => {
+    const noteValue = lastTelemetry?.notes?.steerAngle;
+    if (typeof noteValue === "number" && Number.isFinite(noteValue)) {
+      return clamp(noteValue, -0.55, 0.55);
+    }
+    return 0;
+  }, [lastTelemetry]);
+
   return (
     <div className="relative h-full w-full">
       <Canvas shadows className="h-full w-full" camera={{ position: [8, 7, 9], fov: 45 }}>
         <color attach="background" args={["#f8fafc"]} />
+        <fog attach="fog" args={["#f8fafc", 70, 180]} />
         <ambientLight intensity={0.65} />
         <directionalLight position={[14, 18, 10]} intensity={0.75} castShadow shadow-mapSize-width={1024} shadow-mapSize-height={1024} />
         <spotLight position={[-16, 24, -14]} angle={0.42} intensity={0.35} />
         <GroundGrid />
-        <mesh receiveShadow rotation={[-Math.PI / 2, 0, 0]} position={[0, 0, 0]}>
+        <PathTrace samples={telemetrySamples} />
+        <mesh receiveShadow rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.01, 0]}>
           <planeGeometry args={[240, 240]} />
-          <meshStandardMaterial color="#e2e8f0" />
+          <meshStandardMaterial color="#e8eef5" />
         </mesh>
-        <Vehicle geometry={geometry} state={(lastState as Record<string, number>) ?? null} wheelRadius={wheelRadius} />
+        <Vehicle geometry={geometry} state={(lastState as Record<string, number>) ?? null} wheelRadius={wheelRadius} steerAngle={steerAngle} />
         <OrbitControls enablePan enableZoom zoomSpeed={0.6} />
       </Canvas>
       <div className="pointer-events-none absolute right-4 top-4 space-y-1 rounded-xl bg-white/90 p-3 text-xs font-medium text-slate-700 shadow-lg ring-1 ring-slate-200 backdrop-blur dark:bg-slate-900/85 dark:text-slate-200 dark:ring-slate-700">
-        <div>ψ {radToDeg(vehicleReadouts.psi).toFixed(1)}°</div>
+        <div>psi {radToDeg(vehicleReadouts.psi).toFixed(1)} deg</div>
         <div>r {vehicleReadouts.yawRate.toFixed(3)} rad/s</div>
-        <div>a<sub>y</sub> {vehicleReadouts.ay.toFixed(2)} m/s²</div>
-        <div>β {radToDeg(vehicleReadouts.beta).toFixed(1)}°</div>
+        <div>ay {vehicleReadouts.ay.toFixed(2)} m/s^2</div>
+        <div>beta {radToDeg(vehicleReadouts.beta).toFixed(1)} deg</div>
         {vehicleReadouts.understeer !== null && <div>U {vehicleReadouts.understeer.toFixed(4)} rad/g</div>}
-        {vehicleReadouts.deltaSs !== null && <div>δ<sub>ss</sub> {radToDeg(vehicleReadouts.deltaSs).toFixed(1)}°</div>}
+        {vehicleReadouts.deltaSs !== null && <div>delta<sub>ss</sub> {radToDeg(vehicleReadouts.deltaSs).toFixed(1)} deg</div>}
         {vehicleReadouts.frictionLimited && <div className="text-amber-600">Friction-limited</div>}
-        {vehicleReadouts.slipWarning && <div className="text-rose-600">|α| &gt; 6°</div>}
+        {vehicleReadouts.slipWarning && <div className="text-rose-600">|alpha| &gt; 6 deg</div>}
       </div>
     </div>
   );

@@ -81,19 +81,22 @@ const runLin2DofBaseline = (params: ModelParams): BaselineResult => {
   const steadyWindow = samples.filter((sample) => sample.t > duration - 1);
   const steady =
     steadyWindow.reduce((sum, sample) => sum + (sample.r ?? 0), 0) / Math.max(steadyWindow.length, 1);
+  const maxSettlingError = Math.max(
+    ...steadyWindow.map((sample) => Math.abs((sample.r ?? 0) - steady)),
+    0
+  );
+  const finite = samples.every((sample) =>
+    [sample.r, sample.ay, sample.beta].every((value) => typeof value === "number" && Number.isFinite(value))
+  );
 
-  const monotonicRise = yawRates.slice(0, yawRates.length - 1).every((value, index, array) => {
-    if (samples[index].t < 1) return true;
-    return value <= array[index + 1] + 1e-3;
-  });
-
-  const pass = steady > 0 && peak >= steady && peak < 1.0 && monotonicRise;
+  const pass = finite && steady > 0.05 && peak >= Math.abs(steady) && peak < 1.0 && maxSettlingError < 0.08;
 
   return {
     status: pass ? "pass" : "fail",
     metrics: {
       steadyYawRate: steady,
       peakYawRate: peak,
+      maxSettlingError,
     },
   };
 };

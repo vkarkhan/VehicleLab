@@ -9,12 +9,16 @@
     "dev:api": "node -e \"console.log('API served via Next.js route handlers');\"",
     "dev": "npm-run-all -p dev:web dev:api",
     "build": "npm run build -w @app/web",
+    "lint": "npm run lint -w @app/web",
+    "typecheck": "npm run typecheck -w @app/web",
     "start": "npm run start -w @app/web",
     "db:generate": "npm run db:generate -w @app/web",
     "db:push": "npm run db:push -w @app/web",
     "db:setup": "npm-run-all -s db:generate db:push",
     "prepare": "husky install",
-    "test": "npm run test -w @app/web"
+    "test": "npm run test -w @app/web",
+    "test:e2e": "npm run test:e2e -w @app/web",
+    "content": "npm run content -w @app/web"
   },
   "devDependencies": {
     "husky": "^9.1.7",

@@ -50,6 +50,10 @@ const SimPageContent = () => {
   const baselineMetrics = useSimStore((state) => state.baselineMetrics);
 
   const model = useMemo(() => models.find((item) => item.id === modelId) ?? models[0], [modelId, models]);
+  const scenario = useMemo(
+    () => scenarios.find((item) => item.id === scenarioId) ?? scenarios[0],
+    [scenarioId, scenarios]
+  );
   const schema = model?.schema;
   const resolver = useMemo(() => (schema ? zodResolver(schema) : undefined), [schema]);
 
@@ -454,6 +458,25 @@ const SimPageContent = () => {
     [lateralUnit, modelId, scenarioId, watchedValues]
   );
 
+  const labNotes = [
+    {
+      label: "Yaw rate",
+      copy: "How quickly the body rotates around the vertical axis.",
+    },
+    {
+      label: "Lateral acceleration",
+      copy: "The cornering load felt at the CG, shown in g or m/s^2.",
+    },
+    {
+      label: "Sideslip",
+      copy: "Vehicle heading versus velocity direction; small values keep the linear model credible.",
+    },
+    {
+      label: "Balance",
+      copy: "Front and rear cornering stiffness plus CG split drive understeer or oversteer tendency.",
+    },
+  ];
+
   useEffect(() => {
     if (!initRef.current || typeof window === "undefined") {
       return;
@@ -474,6 +497,41 @@ const SimPageContent = () => {
 
   return (
     <div className="flex min-h-[calc(100vh-6rem)] flex-col bg-slate-100 dark:bg-slate-950">
+      <section className="border-b border-slate-200 bg-white px-6 py-5 dark:border-slate-800 dark:bg-slate-950">
+        <div className="flex flex-col gap-5 xl:flex-row xl:items-end xl:justify-between">
+          <div className="max-w-3xl">
+            <p className="text-xs font-semibold uppercase tracking-[0.28em] text-brand-600 dark:text-brand-300">
+              VehicleLab v2
+            </p>
+            <h1 className="mt-2 text-3xl font-semibold tracking-tight text-slate-950 dark:text-white">
+              2-DOF Linear Bicycle Model Lab
+            </h1>
+            <p className="mt-2 text-sm leading-6 text-slate-600 dark:text-slate-300">
+              Explore yaw rate, lateral acceleration, sideslip, understeer balance, and parameter sensitivity with a
+              lightweight constant-speed bicycle model. Metrics that are not valid for the active scenario are shown as
+              N/A rather than forced.
+            </p>
+          </div>
+          <div className="grid gap-2 text-xs text-slate-600 dark:text-slate-300 sm:grid-cols-2 xl:w-[34rem]">
+            <div className="rounded-md border border-slate-200 bg-slate-50 px-3 py-2 dark:border-slate-800 dark:bg-slate-900/70">
+              <span className="block font-semibold uppercase tracking-wide text-slate-400">Active model</span>
+              <span className="font-medium text-slate-900 dark:text-white">{model?.label ?? modelId}</span>
+            </div>
+            <div className="rounded-md border border-slate-200 bg-slate-50 px-3 py-2 dark:border-slate-800 dark:bg-slate-900/70">
+              <span className="block font-semibold uppercase tracking-wide text-slate-400">Scenario</span>
+              <span className="font-medium text-slate-900 dark:text-white">{scenario?.label ?? scenarioId}</span>
+            </div>
+          </div>
+        </div>
+        <div className="mt-5 grid gap-3 text-xs text-slate-600 dark:text-slate-300 md:grid-cols-4">
+          {labNotes.map((item) => (
+            <div key={item.label} className="rounded-md border border-slate-200 bg-slate-50 px-3 py-3 dark:border-slate-800 dark:bg-slate-900/70">
+              <span className="font-semibold text-slate-900 dark:text-white">{item.label}</span>
+              <p className="mt-1 leading-5">{item.copy}</p>
+            </div>
+          ))}
+        </div>
+      </section>
       <TopBar
         models={models}
         scenarios={scenarios}
