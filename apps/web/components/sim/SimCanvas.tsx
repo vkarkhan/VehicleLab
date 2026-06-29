@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useRef } from "react";
+import { useMemo, useRef } from "react";
 import { Canvas, useFrame, useThree } from "@react-three/fiber";
 import { OrbitControls } from "@react-three/drei";
 import * as THREE from "three";
@@ -25,8 +25,6 @@ type VehicleProps = {
   wheelRadius: number;
   steerAngle: number;
 };
-
-const OVERLAY_SCALE = 3.2;
 
 const VehicleBase = ({ geometry, wheelRadius }: { geometry: VehicleGeometry; wheelRadius: number }) => (
   <mesh castShadow receiveShadow position={[0, wheelRadius * 0.52, 0]}>
@@ -120,66 +118,26 @@ const Vehicle = ({ geometry, state, wheelRadius, steerAngle }: VehicleProps) => 
   );
 };
 
-const toOverlayPoint = (x = 0, y = 0) => ({
-  x: clamp(x * OVERLAY_SCALE, -360, 360),
-  y: clamp(-y * OVERLAY_SCALE, -200, 200),
-});
-
-const MotionTrailOverlay = ({ samples }: { samples: readonly Telemetry[] }) => {
-  const points = useMemo(
-    () =>
-      samples
-        .slice(-240)
-        .filter((sample) => typeof sample.x === "number" && typeof sample.y === "number")
-        .map((sample) => {
-          const point = toOverlayPoint(sample.x ?? 0, sample.y ?? 0);
-          return `${point.x.toFixed(1)},${point.y.toFixed(1)}`;
-        })
-        .join(" "),
-    [samples]
-  );
-
-  if (!points) return null;
-
-  return (
-    <svg className="pointer-events-none absolute inset-0 z-10 h-full w-full" viewBox="-400 -240 800 480" aria-hidden="true">
-      <polyline points={points} fill="none" stroke="#2563eb" strokeLinecap="round" strokeLinejoin="round" strokeWidth="4" opacity="0.55" />
-    </svg>
-  );
-};
-
-const VehicleOverlayGraphic = ({
-  state,
-  yaw,
-  steerAngle,
-}: {
-  state: Record<string, number> | null;
-  yaw: number;
-  steerAngle: number;
-}) => {
-  const point = toOverlayPoint(state?.x ?? 0, state?.y ?? 0);
-
-  return (
+const VehicleOverlayGraphic = ({ yaw, steerAngle }: { yaw: number; steerAngle: number }) => (
+  <div
+    className="pointer-events-none absolute left-1/2 top-1/2 z-10 h-16 w-36 drop-shadow-xl"
+    style={{ transform: `translate(-50%, -50%) rotate(${-yaw}rad)` }}
+    aria-hidden="true"
+  >
+    <div className="absolute left-4 top-0 h-4 w-9 rounded-sm bg-slate-950" />
+    <div className="absolute left-4 bottom-0 h-4 w-9 rounded-sm bg-slate-950" />
+    <div className="absolute right-4 top-0 h-4 w-9 rounded-sm bg-slate-950" />
+    <div className="absolute right-4 bottom-0 h-4 w-9 rounded-sm bg-slate-950" />
+    <div className="absolute inset-x-5 inset-y-2 rounded-full bg-blue-700 ring-2 ring-blue-100" />
+    <div className="absolute left-9 top-1/2 h-8 w-14 -translate-y-1/2 rounded-full bg-sky-200/85" />
+    <div className="absolute right-4 top-1/2 h-9 w-5 -translate-y-1/2 rounded-r-full bg-orange-500" />
+    <div className="absolute left-1/2 top-1/2 h-3 w-3 -translate-x-1/2 -translate-y-1/2 rounded-full bg-orange-400 ring-2 ring-orange-100" />
     <div
-      className="pointer-events-none absolute left-1/2 top-1/2 z-20 h-16 w-36 drop-shadow-xl"
-      style={{ transform: `translate(-50%, -50%) translate(${point.x}px, ${point.y}px) rotate(${-yaw}rad)` }}
-      aria-hidden="true"
-    >
-      <div className="absolute left-4 top-0 h-4 w-9 rounded-sm bg-slate-950" />
-      <div className="absolute left-4 bottom-0 h-4 w-9 rounded-sm bg-slate-950" />
-      <div className="absolute right-4 top-0 h-4 w-9 rounded-sm bg-slate-950" />
-      <div className="absolute right-4 bottom-0 h-4 w-9 rounded-sm bg-slate-950" />
-      <div className="absolute inset-x-5 inset-y-2 rounded-full bg-blue-700 ring-2 ring-blue-100" />
-      <div className="absolute left-9 top-1/2 h-8 w-14 -translate-y-1/2 rounded-full bg-sky-200/85" />
-      <div className="absolute right-4 top-1/2 h-9 w-5 -translate-y-1/2 rounded-r-full bg-orange-500" />
-      <div className="absolute left-1/2 top-1/2 h-3 w-3 -translate-x-1/2 -translate-y-1/2 rounded-full bg-orange-400 ring-2 ring-orange-100" />
-      <div
-        className="absolute right-4 top-1/2 h-1.5 w-12 origin-center rounded-full bg-yellow-300"
-        style={{ transform: `translateY(-50%) rotate(${steerAngle}rad)` }}
-      />
-    </div>
-  );
-};
+      className="absolute right-4 top-1/2 h-1.5 w-12 origin-center -translate-y-1/2 rounded-full bg-yellow-300"
+      style={{ transform: `translateY(-50%) rotate(${steerAngle}rad)` }}
+    />
+  </div>
+);
 
 const PathTrace = ({ samples }: { samples: readonly Telemetry[] }) => {
   const trace = useMemo(() => {
@@ -198,13 +156,19 @@ const PathTrace = ({ samples }: { samples: readonly Telemetry[] }) => {
   return <primitive object={trace} />;
 };
 
-const WorldCamera = () => {
+const FollowCamera = ({ state }: { state: Record<string, number> | null }) => {
   const { camera } = useThree();
+  const targetRef = useRef(new THREE.Vector3(0, 0, 0));
+  const desiredRef = useRef(new THREE.Vector3(8, 7, 9));
 
-  useEffect(() => {
-    camera.position.set(0, 62, 68);
-    camera.lookAt(0, 0, 0);
-  }, [camera]);
+  useFrame(() => {
+    const x = state?.x ?? 0;
+    const z = state?.y ?? 0;
+    targetRef.current.set(x, 0.35, z);
+    desiredRef.current.set(x + 8, 7, z + 9);
+    camera.position.lerp(desiredRef.current, 0.18);
+    camera.lookAt(targetRef.current);
+  }, 2);
 
   return null;
 };
@@ -324,14 +288,17 @@ export const SimCanvas = () => {
     return 0;
   }, [lastTelemetry]);
 
-  const lastVehicleState = (lastState as Record<string, number>) ?? null;
+  const orbitTarget = useMemo<[number, number, number]>(() => {
+    const state = (lastState as Record<string, number>) ?? null;
+    return [state?.x ?? 0, 0.35, state?.y ?? 0];
+  }, [lastState]);
 
   return (
     <div className="relative h-full w-full">
       <Canvas
         shadows
         className="h-full w-full"
-        camera={{ position: [0, 62, 68], fov: 42 }}
+        camera={{ position: [8, 7, 9], fov: 45 }}
         gl={{ alpha: false, antialias: true, preserveDrawingBuffer: true }}
       >
         <color attach="background" args={["#f8fafc"]} />
@@ -345,13 +312,12 @@ export const SimCanvas = () => {
           <planeGeometry args={[240, 240]} />
           <meshStandardMaterial color="#e8eef5" />
         </mesh>
-        <Vehicle geometry={geometry} state={lastVehicleState} wheelRadius={wheelRadius} steerAngle={steerAngle} />
-        <OrbitControls enablePan enableZoom zoomSpeed={0.6} target={[0, 0.35, 0]} />
-        <WorldCamera />
+        <Vehicle geometry={geometry} state={(lastState as Record<string, number>) ?? null} wheelRadius={wheelRadius} steerAngle={steerAngle} />
+        <OrbitControls enablePan enableZoom zoomSpeed={0.6} target={orbitTarget} />
+        <FollowCamera state={(lastState as Record<string, number>) ?? null} />
       </Canvas>
-      <MotionTrailOverlay samples={telemetrySamples} />
-      <VehicleOverlayGraphic state={lastVehicleState} yaw={vehicleReadouts.psi} steerAngle={steerAngle} />
-      <div className="pointer-events-none absolute right-4 top-4 z-30 space-y-1 rounded-xl bg-white/90 p-3 text-xs font-medium text-slate-700 shadow-lg ring-1 ring-slate-200 backdrop-blur dark:bg-slate-900/85 dark:text-slate-200 dark:ring-slate-700">
+      <VehicleOverlayGraphic yaw={vehicleReadouts.psi} steerAngle={steerAngle} />
+      <div className="pointer-events-none absolute right-4 top-4 space-y-1 rounded-xl bg-white/90 p-3 text-xs font-medium text-slate-700 shadow-lg ring-1 ring-slate-200 backdrop-blur dark:bg-slate-900/85 dark:text-slate-200 dark:ring-slate-700">
         <div>psi {radToDeg(vehicleReadouts.psi).toFixed(1)} deg</div>
         <div>r {vehicleReadouts.yawRate.toFixed(3)} rad/s</div>
         <div>ay {vehicleReadouts.ay.toFixed(2)} m/s^2</div>
