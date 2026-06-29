@@ -586,7 +586,7 @@ const SimPageContent = () => {
       )}
       <div className="flex min-h-0 flex-1">
         <div className="flex min-h-0 flex-1 flex-col">
-          <div className="flex-1 bg-slate-200 dark:bg-slate-900">
+          <div className="h-[30rem] min-h-[26rem] bg-slate-200 dark:bg-slate-900">
             <SimCanvas />
           </div>
           <BottomPlots />
