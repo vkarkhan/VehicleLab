@@ -1,92 +1,160 @@
-# VehicleLab
+# VehicleLab Open
 
-VehicleLab is a browser-based vehicle dynamics sandbox with presets, telemetry, and shareable deep links.
+[![CI](https://github.com/vkarkhan/VehicleLab/actions/workflows/ci.yml/badge.svg)](https://github.com/vkarkhan/VehicleLab/actions/workflows/ci.yml) [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE) [![Node 22](https://img.shields.io/badge/Node-22.x-43853d?logo=node.js)](.nvmrc) [![TypeScript](https://img.shields.io/badge/TypeScript-5-3178c6?logo=typescript)](apps/web/package.json)
 
-![Next.js 14](https://img.shields.io/badge/Next.js-14-000000?style=flat-square&logo=next.js&logoColor=white)
-![TypeScript 5](https://img.shields.io/badge/TypeScript-5-3178c6?style=flat-square&logo=typescript&logoColor=white)
-![Node 22.x](https://img.shields.io/badge/Node-22.x-43853d?style=flat-square&logo=node.js&logoColor=white)
+**VehicleLab Open** is a local-first, open-source vehicle-dynamics simulation and validation toolkit for engineers, researchers, students, educators, and community contributors. Clone it, inspect the equations, reproduce the reference tests, add models, fork it for research, or self-host it. No cloud account or hosted service is required for the core simulation workflow.
 
-[Open Sandbox](/sim) | [Model Docs](/docs/models)
+> **Ecosystem boundary:** this repository is the MIT-licensed community toolkit. It is intentionally distinct from **VehicleLab Studio**, a separate private, proprietary, professionally hosted product. Commercial hosting, managed collaboration, premium workflows, billing, customer accounts, and other SaaS capabilities belong to VehicleLab Studio—not VehicleLab Open. The MIT license covers code in this repository; the VehicleLab name and branding are reserved separately. See [TRADEMARKS.md](TRADEMARKS.md).
 
-## Quickstart
+## Why VehicleLab Open
+
+Vehicle-dynamics code is most useful when its assumptions are visible. VehicleLab Open therefore treats **equations, units, sign conventions, numerical behavior, and validation evidence as first-class artifacts** rather than implementation details.
+
+The current toolkit provides browser-based simulation, deterministic reference manoeuvres, analytical comparisons, exportable telemetry, model documentation, and automated physics checks. The emphasis is reproducibility and extensibility rather than SaaS features.
+
+## Model catalogue
+
+| Model / capability | Purpose | Implementation | Validation status |
+|---|---|---|---|
+| Linear 2-DOF bicycle model | Lateral/yaw response and handling studies | `apps/web/lib/models/lin2dof.ts` | Reference scenarios + theory comparisons |
+| Unicycle model | Planar kinematic trajectory studies | `apps/web/lib/models/unicycle.ts` | Model tests |
+| Lateral force / friction envelope | Axle force limiting and grip studies | `apps/web/lib/vehicle/` | Invariant/guard tests |
+| Canonical manoeuvres | Skidpad, step steer, frequency sweep, ramp-to-limit | `apps/web/lib/scenarios/canonical/` | Deterministic checks |
+
+See [`/docs/models`](apps/web/content/models) for model notes and [`/docs/tests`](apps/web/content/tests) for reference-test descriptions.
+
+## Governing equations and conventions
+
+Vehicle coordinates follow the common SAE-style body frame used by this project:
+
+- **x:** forward
+- **y:** driver left
+- **z:** up
+- positive yaw `ψ`: counter-clockwise viewed from above
+- yaw rate: `r = dψ/dt`
+- SI units are used internally unless a model document explicitly states otherwise
+- angles are radians internally; UI conversions must be identified at the boundary
+
+For the linear bicycle model, small-angle lateral dynamics are represented by the coupled lateral-velocity/yaw equations, with linear tyre forces derived from front and rear slip angles. Exact equations, parameter definitions, assumptions, and implementation mapping belong in each model's documentation; contributors must update them when changing physics.
+
+Canonical convention definitions live in `apps/web/lib/vehicle/conventions.ts`. Analytical reference implementations live in `apps/web/lib/theory/`.
+
+## Validation matrix
+
+| Evidence | What it checks | Location |
+|---|---|---|
+| Physics invariants | symmetry, bounds and physical consistency | `tests/invariants.spec.ts` |
+| Guard tests | invalid/nonphysical operating conditions | `tests/guards.spec.ts` |
+| Time-step stability | numerical sensitivity to integration step | `tests/dt_stability.spec.ts` |
+| Theory comparison | numerical result vs analytical prediction | `tests/theory_compare.spec.ts` |
+| Model tests | model-level behavior | `apps/web/tests/models.spec.ts` |
+| Baseline tests | deterministic regression baselines | `apps/web/tests/baseline.spec.ts` |
+| Simulation E2E | browser workflow | `apps/web/tests/sim.spec.ts` |
+
+A model is not considered mature merely because it runs. New physics should arrive with equations, units, assumptions, a reference case, and an automated validation test. See [CONTRIBUTING.md](CONTRIBUTING.md).
+
+## Local quickstart
 
 ### Requirements
-- Node.js 22.x (`.nvmrc` pins 22.9.0)
-- npm 10 (ships with Node 22)
-- SQLite (bundled; Prisma downloads the native binary on first install)
 
-### Setup
+- Node.js 22.x (`.nvmrc` pins the supported version)
+- npm
+
 ```bash
+git clone https://github.com/vkarkhan/VehicleLab.git
+cd VehicleLab
 nvm use
 npm install
-cp .env.example .env.local
-npm run db:setup
 npm run dev
 ```
-Open http://localhost:3000 and use **Call /api/ping** to smoke-test the API.
 
-### Common scripts
-- `npm run build` - Production build of the Next.js app
-- `npm run start` - Serve the build locally
-- `npm run lint` / `npm run typecheck` - Static analysis for the web workspace
-- `npm run test` - Unit tests (Vitest)
-- `npm run test:e2e` - Playwright end-to-end tests (requires installed browsers)
-- `npm run content` - Regenerate Contentlayer output
+Open `http://localhost:3000/sim`.
 
-## Preview
+**Core simulation requires no cloud database, authentication provider, payment processor, analytics service, or API key.** Legacy SaaS scaffolding is being removed from the open edition; see the roadmap below. If a development path still asks for unrelated service credentials, please file an issue.
 
-![Sandbox overview](./docs/screenshots/sandbox-overview.svg)
+Run the verification suite with:
 
-## Highlights
-- Canvas-first sandbox with shareable presets, live telemetry, and exportable CSV or PNG artifacts
-- Linear 2-DOF and unicycle models with scenario presets and deep links into the sandbox
-- Local-first setup: SQLite, Prisma, and Contentlayer run without external services
-- Optional three.js viewer and validation badges keep heavy features gated by configuration
-
-## Canonical reference tests
-- Four instrumented manoeuvres (skidpad, step-steer, frequency sweep, ramp-to-limit) now live inside the sandbox.
-- Toggle theory overlays to compare telemetry against analytic predictions, export CSV/JSON/PNG bundles, and deep-link each run.
-- Docs pages under `/docs/tests` describe setup, governing equations, tolerances, and deep links.
-
-## Physics conventions
-- Vehicle frame: $x$ forward, $y$ to driver left, $z$ up. Yaw $\psi$ increases counter-clockwise with yaw rate $r = \dot{\psi}$.
-- Understeer gradient $U$ (rad/g) and steady-state steer $\delta_{ss}$ now surface in the sandbox top bar and plot badges.
-- Friction clamp (per-axle $|F_y| \le \mu F_z$) is enabled by default for reference tests and flagged when active.
-
-## Simulation Sandbox
-- Keyboard shortcuts: press Space to run or pause, R to reset, number keys (1-9) to swap scenarios instantly
-- Telemetry mini-plots use a ring buffer (about 20,000 samples) so charts stay smooth without starving the main thread
-- Share state through the Share button; the sandbox serialises into the `p` query parameter for deep links
-- Model docs link directly into presets, keeping docs and sandbox in sync
-- Baseline badges run deterministic checks and surface metrics inline
-- Scene viewer controls and validation overlays (planned, disabled by default) can be toggled via `apps/web/content/profile.json`
-
-## Docs & Workflows
-- `/docs/models` - Model catalogue with parameter sheets and Open Sandbox shortcuts
-- `/docs/models/comparison` - Side-by-side comparison of available models and their recommended scenarios
-- `/sim` - Canvas-first sandbox with shareable query string presets
-- `/vehicellab` - Marketing page outlining capabilities for stakeholders
-
-## Repository Layout
-```
-vehiclelab/
-|- apps/
-|  \- web/          # Next.js app (App Router, Prisma, Contentlayer, workers)
-|- docs/            # Reference docs, screenshots, deployment notes
-|- .env.example     # Template for .env.local
-|- .nvmrc           # Node version pin (22.9.0)
-\- package.json     # npm workspace entry point
+```bash
+npm test
 ```
 
-## Deployment Notes
-- `.nvmrc` pins Node 22.9.0; deploy targets should match to keep Prisma binaries compatible
-- `vercel.json` ships with a minimal config (edge-disabled, analytics opt-out) so the project can be dropped onto Vercel as-is
-- Environment variables live in `.env.local`; copy from `.env.example`. NextAuth, payments, and analytics stay disabled unless you provide credentials
+Additional project scripts are documented in `package.json` and `apps/web/package.json`.
 
-## Troubleshooting
-- npm registry hiccups (403): `npm config set registry https://registry.npmjs.org/ && npm cache clean --force`
-- Contentlayer output missing: run `npm run content` or rerun `npm run dev` to regenerate caches
-- Reset the SQLite db: remove `apps/web/data/app.db` and rerun `npm run db:setup`
-- Windows shell quirks: Git Bash or WSL is recommended; Command Prompt may ignore some scripts
+## Architecture
 
-See `docs/AUDIT.md` for deeper notes on local-first auth, Prisma, and validation coverage.
+```text
+Browser UI
+   |
+   +-- scenario/configuration layer
+   |      `apps/web/lib/scenarios/`
+   |
+   +-- simulation registry + runner
+   |      `apps/web/lib/sim/`
+   |             |
+   |             +-- Web Worker (`apps/web/workers/simWorker.ts`)
+   |
+   +-- vehicle/model kernels
+   |      `apps/web/lib/models/`
+   |      `apps/web/lib/vehicle/`
+   |
+   +-- analytical references
+   |      `apps/web/lib/theory/`
+   |
+   +-- validation
+          `apps/web/lib/validation/`
+          `tests/`
+```
+
+The intended dependency direction is **UI → scenario/runner → model kernel**, while theory and validation independently challenge model outputs. Physics code should not depend on authentication, payments, analytics, or hosted infrastructure.
+
+## Contributing
+
+Contributions are welcome from engineers, researchers, educators, and students. A physics/model contribution must include:
+
+1. governing equations and assumptions;
+2. every parameter/state/output with SI units;
+3. coordinate and sign conventions;
+4. provenance for reference data or literature equations;
+5. at least one automated validation or invariant test;
+6. documented numerical tolerances and why they are reasonable.
+
+Start with [CONTRIBUTING.md](CONTRIBUTING.md) and the [model contribution template](.github/ISSUE_TEMPLATE/model-contribution.md).
+
+## Roadmap
+
+**Open-edition cleanup**
+- remove dormant authentication, account, pricing, paywall, Stripe/Razorpay, Prisma database and analytics scaffolding;
+- simplify local startup so simulation and documentation have no service dependencies;
+- tighten CI around build, type checking, tests and physics validation.
+
+**Physics and validation**
+- strengthen model-specific equation sheets and parameter tables;
+- add traceable literature/reference datasets and tolerances;
+- expand tyre, longitudinal, ride/suspension and higher-DOF model coverage;
+- add reproducible benchmark bundles and machine-readable validation reports.
+
+**Community engineering**
+- stable model/plugin contract;
+- documented data import/export schema;
+- contributor examples and teaching notebooks;
+- tagged releases and semantic changelog discipline.
+
+The roadmap is directional, not a promise of commercial VehicleLab Studio features.
+
+## Project governance and security
+
+- [CONTRIBUTING.md](CONTRIBUTING.md) — engineering and review standards
+- [SECURITY.md](SECURITY.md) — responsible vulnerability reporting
+- [CHANGELOG.md](CHANGELOG.md) — notable public-edition changes
+- [TRADEMARKS.md](TRADEMARKS.md) — MIT code vs reserved branding
+- [CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md) — community expectations
+
+## License and branding
+
+Source code in this repository is licensed under the [MIT License](LICENSE), copyright © 2025–2026 Varad A. Karkhanis and contributors.
+
+The MIT license grants rights to the software; it does **not** grant rights to use VehicleLab names, logos, product identity, or other brand assets as the name or branding of a derived product. See [TRADEMARKS.md](TRADEMARKS.md).
+
+---
+
+VehicleLab Open is for engineering, research, and education. Validate models against appropriate references before using results for safety-critical, regulatory, or production decisions.
